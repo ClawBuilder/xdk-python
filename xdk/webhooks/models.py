@@ -16,15 +16,6 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get_stream_links
-
-
-class GetStreamLinksResponse(BaseModel):
-    """Response model for get_stream_links"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for create_stream_link
 
 
@@ -78,6 +69,15 @@ class CreateRequest(BaseModel):
 
 class CreateResponse(BaseModel):
     """Response model for create"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_stream_links
+
+
+class GetStreamLinksResponse(BaseModel):
+    """Response model for get_stream_links"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 

@@ -21,13 +21,13 @@ import time
 if TYPE_CHECKING:
     from ..client import Client
 from .models import (
-    DeleteResponse,
-    CreateRequest,
-    CreateResponse,
-    SearchEligiblePostsResponse,
-    SearchWrittenResponse,
     EvaluateRequest,
     EvaluateResponse,
+    CreateRequest,
+    CreateResponse,
+    SearchWrittenResponse,
+    SearchEligiblePostsResponse,
+    DeleteResponse,
 )
 
 
@@ -39,17 +39,15 @@ class CommunityNotesClient:
         self.client = client
 
 
-    def delete(self, id: Any) -> DeleteResponse:
+    def evaluate(self, body: Optional[EvaluateRequest] = None) -> EvaluateResponse:
         """
-        Delete a Community Note
-        Deletes a community note.
-        Args:
-            id: The community note id to delete.
-            Returns:
-            DeleteResponse: Response data
+        Evaluate a Community Note
+        Endpoint to evaluate a community note.
+        body: Request body
+        Returns:
+            EvaluateResponse: Response data
         """
-        url = self.client.base_url + "/2/notes/{id}"
-        url = url.replace("{id}", str(id))
+        url = self.client.base_url + "/2/evaluate_note"
         # Ensure we have a valid access token
         if self.client.oauth2_auth and self.client.token:
             # Check if token needs refresh
@@ -57,27 +55,36 @@ class CommunityNotesClient:
                 self.client.refresh_token()
         params = {}
         headers = {}
+        headers["Content-Type"] = "application/json"
         # Prepare request data
         json_data = None
+        if body is not None:
+            json_data = (
+                body.model_dump(exclude_none=True)
+                if hasattr(body, "model_dump")
+                else body
+            )
         # Make the request
         if self.client.oauth2_session:
-            response = self.client.oauth2_session.delete(
+            response = self.client.oauth2_session.post(
                 url,
                 params=params,
                 headers=headers,
+                json=json_data,
             )
         else:
-            response = self.client.session.delete(
+            response = self.client.session.post(
                 url,
                 params=params,
                 headers=headers,
+                json=json_data,
             )
         # Check for errors
         response.raise_for_status()
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return DeleteResponse.model_validate(response_data)
+        return EvaluateResponse.model_validate(response_data)
 
 
     def create(self, body: Optional[CreateRequest] = None) -> CreateResponse:
@@ -126,6 +133,63 @@ class CommunityNotesClient:
         response_data = response.json()
         # Convert to Pydantic model if applicable
         return CreateResponse.model_validate(response_data)
+
+
+    def search_written(
+        self,
+        test_mode: bool,
+        pagination_token: str = None,
+        max_results: int = None,
+        note_fields: List = None,
+    ) -> SearchWrittenResponse:
+        """
+        Search for Community Notes Written
+        Returns all the community notes written by the user.
+        Args:
+            test_mode: If true, return the notes the caller wrote for the test. If false, return the notes the caller wrote on the product.
+            pagination_token: Pagination token to get next set of posts eligible for notes.
+            max_results: Max results to return.
+            note_fields: A comma separated list of Note fields to display.
+            Returns:
+            SearchWrittenResponse: Response data
+        """
+        url = self.client.base_url + "/2/notes/search/notes_written"
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        if test_mode is not None:
+            params["test_mode"] = test_mode
+        if pagination_token is not None:
+            params["pagination_token"] = pagination_token
+        if max_results is not None:
+            params["max_results"] = max_results
+        if note_fields is not None:
+            params["note.fields"] = ",".join(str(item) for item in note_fields)
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        if self.client.oauth2_session:
+            response = self.client.oauth2_session.get(
+                url,
+                params=params,
+                headers=headers,
+            )
+        else:
+            response = self.client.session.get(
+                url,
+                params=params,
+                headers=headers,
+            )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return SearchWrittenResponse.model_validate(response_data)
 
 
     def search_eligible_posts(
@@ -209,51 +273,35 @@ class CommunityNotesClient:
         return SearchEligiblePostsResponse.model_validate(response_data)
 
 
-    def search_written(
-        self,
-        test_mode: bool,
-        pagination_token: str = None,
-        max_results: int = None,
-        note_fields: List = None,
-    ) -> SearchWrittenResponse:
+    def delete(self, id: Any) -> DeleteResponse:
         """
-        Search for Community Notes Written
-        Returns all the community notes written by the user.
+        Delete a Community Note
+        Deletes a community note.
         Args:
-            test_mode: If true, return the notes the caller wrote for the test. If false, return the notes the caller wrote on the product.
-            pagination_token: Pagination token to get next set of posts eligible for notes.
-            max_results: Max results to return.
-            note_fields: A comma separated list of Note fields to display.
+            id: The community note id to delete.
             Returns:
-            SearchWrittenResponse: Response data
+            DeleteResponse: Response data
         """
-        url = self.client.base_url + "/2/notes/search/notes_written"
+        url = self.client.base_url + "/2/notes/{id}"
+        url = url.replace("{id}", str(id))
         # Ensure we have a valid access token
         if self.client.oauth2_auth and self.client.token:
             # Check if token needs refresh
             if self.client.is_token_expired():
                 self.client.refresh_token()
         params = {}
-        if test_mode is not None:
-            params["test_mode"] = test_mode
-        if pagination_token is not None:
-            params["pagination_token"] = pagination_token
-        if max_results is not None:
-            params["max_results"] = max_results
-        if note_fields is not None:
-            params["note.fields"] = ",".join(str(item) for item in note_fields)
         headers = {}
         # Prepare request data
         json_data = None
         # Make the request
         if self.client.oauth2_session:
-            response = self.client.oauth2_session.get(
+            response = self.client.oauth2_session.delete(
                 url,
                 params=params,
                 headers=headers,
             )
         else:
-            response = self.client.session.get(
+            response = self.client.session.delete(
                 url,
                 params=params,
                 headers=headers,
@@ -263,52 +311,4 @@ class CommunityNotesClient:
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return SearchWrittenResponse.model_validate(response_data)
-
-
-    def evaluate(self, body: Optional[EvaluateRequest] = None) -> EvaluateResponse:
-        """
-        Evaluate a Community Note
-        Endpoint to evaluate a community note.
-        body: Request body
-        Returns:
-            EvaluateResponse: Response data
-        """
-        url = self.client.base_url + "/2/evaluate_note"
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        params = {}
-        headers = {}
-        headers["Content-Type"] = "application/json"
-        # Prepare request data
-        json_data = None
-        if body is not None:
-            json_data = (
-                body.model_dump(exclude_none=True)
-                if hasattr(body, "model_dump")
-                else body
-            )
-        # Make the request
-        if self.client.oauth2_session:
-            response = self.client.oauth2_session.post(
-                url,
-                params=params,
-                headers=headers,
-                json=json_data,
-            )
-        else:
-            response = self.client.session.post(
-                url,
-                params=params,
-                headers=headers,
-                json=json_data,
-            )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return EvaluateResponse.model_validate(response_data)
+        return DeleteResponse.model_validate(response_data)

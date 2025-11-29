@@ -16,11 +16,17 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for delete
+# Models for evaluate
 
 
-class DeleteResponse(BaseModel):
-    """Response model for delete"""
+class EvaluateRequest(BaseModel):
+    """Request model for evaluate"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class EvaluateResponse(BaseModel):
+    """Response model for evaluate"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -40,15 +46,6 @@ class CreateResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for search_eligible_posts
-
-
-class SearchEligiblePostsResponse(BaseModel):
-    """Response model for search_eligible_posts"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for search_written
 
 
@@ -58,16 +55,19 @@ class SearchWrittenResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for evaluate
+# Models for search_eligible_posts
 
 
-class EvaluateRequest(BaseModel):
-    """Request model for evaluate"""
+class SearchEligiblePostsResponse(BaseModel):
+    """Response model for search_eligible_posts"""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-class EvaluateResponse(BaseModel):
-    """Response model for evaluate"""
+# Models for delete
+
+
+class DeleteResponse(BaseModel):
+    """Response model for delete"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
