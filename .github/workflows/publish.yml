@@ -1,23 +1,63 @@
 # Publish workflow for xdk-python
-# Triggered by the generator repo via repository_dispatch
+# Triggers automatically when code is pushed to main (by generator)
 # Also supports manual triggering for hotfixes
 
 name: Publish to PyPI
 
 on:
-  repository_dispatch:
-    types: [release]
+  push:
+    branches: [main]
+    paths:
+      - 'pyproject.toml'  # Only publish when version changes
   
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to publish (must match pyproject.toml)'
-        required: true
-        type: string
+  workflow_dispatch:  # Manual trigger for hotfixes
 
 jobs:
+  check-version:
+    name: Check if version changed
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.check.outputs.should_publish }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Check version change
+        id: check
+        run: |
+          VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Check if this is a manual trigger
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "Manual trigger - will publish v$VERSION"
+            exit 0
+          fi
+          
+          # Check if version changed from previous commit
+          git show HEAD~1:pyproject.toml > /tmp/old_pyproject.toml 2>/dev/null || {
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "First commit with pyproject.toml - will publish v$VERSION"
+            exit 0
+          }
+          
+          OLD_VERSION=$(grep '^version = ' /tmp/old_pyproject.toml | sed 's/version = "\(.*\)"/\1/' || echo "")
+          
+          if [ "$VERSION" != "$OLD_VERSION" ]; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "Version changed: $OLD_VERSION → $VERSION"
+          else
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+            echo "Version unchanged ($VERSION) - skipping publish"
+          fi
+
   publish:
     name: Build and Publish
+    needs: check-version
+    if: needs.check-version.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,28 +68,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Get version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            VERSION="${{ github.event.client_payload.version }}"
-          else
-            VERSION="${{ inputs.version }}"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Publishing version: $VERSION"
-      
-      - name: Verify version matches pyproject.toml
-        run: |
-          TOML_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          if [ "$TOML_VERSION" != "${{ steps.version.outputs.version }}" ]; then
-            echo "❌ Version mismatch!"
-            echo "   pyproject.toml: $TOML_VERSION"
-            echo "   Requested: ${{ steps.version.outputs.version }}"
-            exit 1
-          fi
-          echo "✅ Version verified: $TOML_VERSION"
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -72,19 +90,20 @@ jobs:
       
       - name: Create Git tag
         run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
+          git tag -a "v$VERSION" -m "Release v$VERSION" || echo "Tag already exists"
+          git push origin "v$VERSION" || echo "Tag already pushed"
       
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
+          tag_name: v${{ needs.check-version.outputs.version }}
+          name: v${{ needs.check-version.outputs.version }}
           generate_release_notes: true
           draft: false
-          prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') }}
+          prerelease: ${{ contains(needs.check-version.outputs.version, 'beta') || contains(needs.check-version.outputs.version, 'alpha') }}
           files: |
             dist/*
       
@@ -92,14 +111,9 @@ jobs:
         run: |
           echo "# 🎉 Published to PyPI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ needs.check-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Install" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "pip install xdk==${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "pip install xdk==${{ needs.check-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Links" >> $GITHUB_STEP_SUMMARY
-          echo "- [PyPI](https://pypi.org/project/xdk/${{ steps.version.outputs.version }}/)" >> $GITHUB_STEP_SUMMARY
-          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }})" >> $GITHUB_STEP_SUMMARY
-
