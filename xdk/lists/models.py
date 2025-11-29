@@ -25,30 +25,6 @@ class GetPostsResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for create
-
-
-class CreateRequest(BaseModel):
-    """Request model for create"""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
-class CreateResponse(BaseModel):
-    """Response model for create"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_followers
-
-
-class GetFollowersResponse(BaseModel):
-    """Response model for get_followers"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for get_members
 
 
@@ -111,5 +87,29 @@ class UpdateResponse(BaseModel):
 
 class DeleteResponse(BaseModel):
     """Response model for delete"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_followers
+
+
+class GetFollowersResponse(BaseModel):
+    """Response model for get_followers"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for create
+
+
+class CreateRequest(BaseModel):
+    """Request model for create"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CreateResponse(BaseModel):
+    """Response model for create"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

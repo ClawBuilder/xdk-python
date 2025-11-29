@@ -16,6 +16,15 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
+# Models for get_analytics
+
+
+class GetAnalyticsResponse(BaseModel):
+    """Response model for get_analytics"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for append_upload
 
 
@@ -27,33 +36,6 @@ class AppendUploadRequest(BaseModel):
 
 class AppendUploadResponse(BaseModel):
     """Response model for append_upload"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_by_key
-
-
-class GetByKeyResponse(BaseModel):
-    """Response model for get_by_key"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_analytics
-
-
-class GetAnalyticsResponse(BaseModel):
-    """Response model for get_analytics"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_by_keys
-
-
-class GetByKeysResponse(BaseModel):
-    """Response model for get_by_keys"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -84,30 +66,6 @@ class DeleteSubtitlesRequest(BaseModel):
 
 class DeleteSubtitlesResponse(BaseModel):
     """Response model for delete_subtitles"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for create_metadata
-
-
-class CreateMetadataRequest(BaseModel):
-    """Request model for create_metadata"""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
-class CreateMetadataResponse(BaseModel):
-    """Response model for create_metadata"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for finalize_upload
-
-
-class FinalizeUploadResponse(BaseModel):
-    """Response model for finalize_upload"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -147,5 +105,47 @@ class InitializeUploadRequest(BaseModel):
 
 class InitializeUploadResponse(BaseModel):
     """Response model for initialize_upload"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for finalize_upload
+
+
+class FinalizeUploadResponse(BaseModel):
+    """Response model for finalize_upload"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_by_keys
+
+
+class GetByKeysResponse(BaseModel):
+    """Response model for get_by_keys"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for create_metadata
+
+
+class CreateMetadataRequest(BaseModel):
+    """Request model for create_metadata"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CreateMetadataResponse(BaseModel):
+    """Response model for create_metadata"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_by_key
+
+
+class GetByKeyResponse(BaseModel):
+    """Response model for get_by_key"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

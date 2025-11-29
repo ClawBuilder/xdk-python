@@ -28,6 +28,51 @@ class TestCommunityNotesStructure:
         self.community_notes_client = getattr(self.client, "community_notes")
 
 
+    def test_delete_exists(self):
+        """Test that delete method exists with correct signature."""
+        # Check method exists
+        method = getattr(CommunityNotesClient, "delete", None)
+        assert (
+            method is not None
+        ), f"Method delete does not exist on CommunityNotesClient"
+        # Check method is callable
+        assert callable(method), f"delete is not callable"
+        # Check method signature
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have 'self' as first parameter
+        assert len(params) >= 1, f"delete should have at least 'self' parameter"
+        assert (
+            params[0] == "self"
+        ), f"First parameter should be 'self', got '{params[0]}'"
+        # Check required parameters exist (excluding 'self')
+        required_params = [
+            "id",
+        ]
+        for required_param in required_params:
+            assert (
+                required_param in params
+            ), f"Required parameter '{required_param}' missing from delete"
+        # Check optional parameters have defaults (excluding 'self')
+        optional_params = []
+        for optional_param in optional_params:
+            if optional_param in params:
+                param_obj = sig.parameters[optional_param]
+                assert (
+                    param_obj.default is not inspect.Parameter.empty
+                ), f"Optional parameter '{optional_param}' should have a default value"
+
+
+    def test_delete_return_annotation(self):
+        """Test that delete has proper return type annotation."""
+        method = getattr(CommunityNotesClient, "delete")
+        sig = inspect.signature(method)
+        # Check return annotation exists
+        assert (
+            sig.return_annotation is not inspect.Signature.empty
+        ), f"Method delete should have return type annotation"
+
+
     def test_evaluate_exists(self):
         """Test that evaluate method exists with correct signature."""
         # Check method exists
@@ -69,49 +114,6 @@ class TestCommunityNotesStructure:
         assert (
             sig.return_annotation is not inspect.Signature.empty
         ), f"Method evaluate should have return type annotation"
-
-
-    def test_create_exists(self):
-        """Test that create method exists with correct signature."""
-        # Check method exists
-        method = getattr(CommunityNotesClient, "create", None)
-        assert (
-            method is not None
-        ), f"Method create does not exist on CommunityNotesClient"
-        # Check method is callable
-        assert callable(method), f"create is not callable"
-        # Check method signature
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have 'self' as first parameter
-        assert len(params) >= 1, f"create should have at least 'self' parameter"
-        assert (
-            params[0] == "self"
-        ), f"First parameter should be 'self', got '{params[0]}'"
-        # Check required parameters exist (excluding 'self')
-        required_params = []
-        for required_param in required_params:
-            assert (
-                required_param in params
-            ), f"Required parameter '{required_param}' missing from create"
-        # Check optional parameters have defaults (excluding 'self')
-        optional_params = []
-        for optional_param in optional_params:
-            if optional_param in params:
-                param_obj = sig.parameters[optional_param]
-                assert (
-                    param_obj.default is not inspect.Parameter.empty
-                ), f"Optional parameter '{optional_param}' should have a default value"
-
-
-    def test_create_return_annotation(self):
-        """Test that create has proper return type annotation."""
-        method = getattr(CommunityNotesClient, "create")
-        sig = inspect.signature(method)
-        # Check return annotation exists
-        assert (
-            sig.return_annotation is not inspect.Signature.empty
-        ), f"Method create should have return type annotation"
 
 
     def test_search_written_exists(self):
@@ -258,31 +260,29 @@ class TestCommunityNotesStructure:
         ), f"Paginated method search_eligible_posts should have pagination parameters"
 
 
-    def test_delete_exists(self):
-        """Test that delete method exists with correct signature."""
+    def test_create_exists(self):
+        """Test that create method exists with correct signature."""
         # Check method exists
-        method = getattr(CommunityNotesClient, "delete", None)
+        method = getattr(CommunityNotesClient, "create", None)
         assert (
             method is not None
-        ), f"Method delete does not exist on CommunityNotesClient"
+        ), f"Method create does not exist on CommunityNotesClient"
         # Check method is callable
-        assert callable(method), f"delete is not callable"
+        assert callable(method), f"create is not callable"
         # Check method signature
         sig = inspect.signature(method)
         params = list(sig.parameters.keys())
         # Should have 'self' as first parameter
-        assert len(params) >= 1, f"delete should have at least 'self' parameter"
+        assert len(params) >= 1, f"create should have at least 'self' parameter"
         assert (
             params[0] == "self"
         ), f"First parameter should be 'self', got '{params[0]}'"
         # Check required parameters exist (excluding 'self')
-        required_params = [
-            "id",
-        ]
+        required_params = []
         for required_param in required_params:
             assert (
                 required_param in params
-            ), f"Required parameter '{required_param}' missing from delete"
+            ), f"Required parameter '{required_param}' missing from create"
         # Check optional parameters have defaults (excluding 'self')
         optional_params = []
         for optional_param in optional_params:
@@ -293,24 +293,24 @@ class TestCommunityNotesStructure:
                 ), f"Optional parameter '{optional_param}' should have a default value"
 
 
-    def test_delete_return_annotation(self):
-        """Test that delete has proper return type annotation."""
-        method = getattr(CommunityNotesClient, "delete")
+    def test_create_return_annotation(self):
+        """Test that create has proper return type annotation."""
+        method = getattr(CommunityNotesClient, "create")
         sig = inspect.signature(method)
         # Check return annotation exists
         assert (
             sig.return_annotation is not inspect.Signature.empty
-        ), f"Method delete should have return type annotation"
+        ), f"Method create should have return type annotation"
 
 
     def test_all_expected_methods_exist(self):
         """Test that all expected methods exist on the client."""
         expected_methods = [
+            "delete",
             "evaluate",
-            "create",
             "search_written",
             "search_eligible_posts",
-            "delete",
+            "create",
         ]
         for expected_method in expected_methods:
             assert hasattr(

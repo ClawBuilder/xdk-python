@@ -17,41 +17,41 @@ from typing import Dict, List, Optional, Union, Any, Callable
 from .oauth2_auth import OAuth2PKCEAuth
 from .paginator import Cursor, cursor, PaginationError
 
-from .community_notes.client import CommunityNotesClient
-
-from .general.client import GeneralClient
-
-from .communities.client import CommunitiesClient
-
-from .connections.client import ConnectionsClient
-
-from .spaces.client import SpacesClient
+from .lists.client import ListsClient
 
 from .users.client import UsersClient
 
+from .spaces.client import SpacesClient
+
+from .trends.client import TrendsClient
+
+from .compliance.client import ComplianceClient
+
 from .webhooks.client import WebhooksClient
 
-from .media.client import MediaClient
+from .general.client import GeneralClient
+
+from .connections.client import ConnectionsClient
+
+from .direct_messages.client import DirectMessagesClient
+
+from .community_notes.client import CommunityNotesClient
+
+from .news.client import NewsClient
+
+from .communities.client import CommunitiesClient
+
+from .activity.client import ActivityClient
 
 from .posts.client import PostsClient
 
 from .stream.client import StreamClient
 
-from .lists.client import ListsClient
+from .media.client import MediaClient
 
 from .usage.client import UsageClient
 
-from .compliance.client import ComplianceClient
-
-from .activity.client import ActivityClient
-
-from .news.client import NewsClient
-
 from .account_activity.client import AccountActivityClient
-
-from .direct_messages.client import DirectMessagesClient
-
-from .trends.client import TrendsClient
 
 
 class Client:
@@ -79,7 +79,7 @@ class Client:
             scope: Space-separated list of scopes for OAuth2 authorization.
         """
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "xdk-python/0.2.6-beta"})
+        self.session.headers.update({"User-Agent": "xdk-python/0.2.7-beta"})
         self.base_url = base_url
         self.bearer_token = bearer_token
         # Set up OAuth2 PKCE authentication if credentials are provided
@@ -94,24 +94,24 @@ class Client:
                 scope=scope,
             )
         # Initialize clients for each tag
-        self.community_notes = CommunityNotesClient(self)
-        self.general = GeneralClient(self)
-        self.communities = CommunitiesClient(self)
-        self.connections = ConnectionsClient(self)
-        self.spaces = SpacesClient(self)
+        self.lists = ListsClient(self)
         self.users = UsersClient(self)
+        self.spaces = SpacesClient(self)
+        self.trends = TrendsClient(self)
+        self.compliance = ComplianceClient(self)
         self.webhooks = WebhooksClient(self)
-        self.media = MediaClient(self)
+        self.general = GeneralClient(self)
+        self.connections = ConnectionsClient(self)
+        self.direct_messages = DirectMessagesClient(self)
+        self.community_notes = CommunityNotesClient(self)
+        self.news = NewsClient(self)
+        self.communities = CommunitiesClient(self)
+        self.activity = ActivityClient(self)
         self.posts = PostsClient(self)
         self.stream = StreamClient(self)
-        self.lists = ListsClient(self)
+        self.media = MediaClient(self)
         self.usage = UsageClient(self)
-        self.compliance = ComplianceClient(self)
-        self.activity = ActivityClient(self)
-        self.news = NewsClient(self)
         self.account_activity = AccountActivityClient(self)
-        self.direct_messages = DirectMessagesClient(self)
-        self.trends = TrendsClient(self)
 
     @property
 

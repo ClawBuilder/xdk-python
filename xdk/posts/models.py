@@ -16,6 +16,15 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
+# Models for get_analytics
+
+
+class GetAnalyticsResponse(BaseModel):
+    """Response model for get_analytics"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for get_insights_historical
 
 
@@ -25,38 +34,11 @@ class GetInsightsHistoricalResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for get_reposts
+# Models for search_recent
 
 
-class GetRepostsResponse(BaseModel):
-    """Response model for get_reposts"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_insights28hr
-
-
-class GetInsights28hrResponse(BaseModel):
-    """Response model for get_insights28hr"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_counts_recent
-
-
-class GetCountsRecentResponse(BaseModel):
-    """Response model for get_counts_recent"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for search_all
-
-
-class SearchAllResponse(BaseModel):
-    """Response model for search_all"""
+class SearchRecentResponse(BaseModel):
+    """Response model for search_recent"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -70,15 +52,6 @@ class GetQuotedResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for get_liking_users
-
-
-class GetLikingUsersResponse(BaseModel):
-    """Response model for get_liking_users"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for get_counts_all
 
 
@@ -88,11 +61,29 @@ class GetCountsAllResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for get_analytics
+# Models for get_counts_recent
 
 
-class GetAnalyticsResponse(BaseModel):
-    """Response model for get_analytics"""
+class GetCountsRecentResponse(BaseModel):
+    """Response model for get_counts_recent"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_insights28hr
+
+
+class GetInsights28hrResponse(BaseModel):
+    """Response model for get_insights28hr"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_liking_users
+
+
+class GetLikingUsersResponse(BaseModel):
+    """Response model for get_liking_users"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -121,20 +112,11 @@ class CreateResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for get_reposted_by
+# Models for search_all
 
 
-class GetRepostedByResponse(BaseModel):
-    """Response model for get_reposted_by"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for search_recent
-
-
-class SearchRecentResponse(BaseModel):
-    """Response model for search_recent"""
+class SearchAllResponse(BaseModel):
+    """Response model for search_all"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -153,6 +135,24 @@ class GetByIdResponse(BaseModel):
 
 class DeleteResponse(BaseModel):
     """Response model for delete"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_reposted_by
+
+
+class GetRepostedByResponse(BaseModel):
+    """Response model for get_reposted_by"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_reposts
+
+
+class GetRepostsResponse(BaseModel):
+    """Response model for get_reposts"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 

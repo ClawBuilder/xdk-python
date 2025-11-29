@@ -24,9 +24,9 @@ print("🚀 Processing X API SDK Documentation for Mintlify...")
 MINTLIFY_CONFIG = {
     "outputDir": "mintlify-docs",
     "baseUrl": "https://docs.x.com",
-    "title": "X API SDK v0.2.6-beta",
+    "title": "X API SDK v0.2.7-beta",
     "description": "Python SDK for the X API with comprehensive pagination, authentication, and streaming support.",
-    "version": "0.2.6-beta",
+    "version": "0.2.7-beta",
     "githubUrl": "https://github.com/xdevplatform/xdk",
 }
 

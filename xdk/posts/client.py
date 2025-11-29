@@ -21,22 +21,22 @@ import time
 if TYPE_CHECKING:
     from ..client import Client
 from .models import (
-    GetInsightsHistoricalResponse,
-    GetRepostsResponse,
-    GetInsights28hrResponse,
-    GetCountsRecentResponse,
-    SearchAllResponse,
-    GetQuotedResponse,
-    GetLikingUsersResponse,
-    GetCountsAllResponse,
     GetAnalyticsResponse,
+    GetInsightsHistoricalResponse,
+    SearchRecentResponse,
+    GetQuotedResponse,
+    GetCountsAllResponse,
+    GetCountsRecentResponse,
+    GetInsights28hrResponse,
+    GetLikingUsersResponse,
     GetByIdsResponse,
     CreateRequest,
     CreateResponse,
-    GetRepostedByResponse,
-    SearchRecentResponse,
+    SearchAllResponse,
     GetByIdResponse,
     DeleteResponse,
+    GetRepostedByResponse,
+    GetRepostsResponse,
     HideReplyRequest,
     HideReplyResponse,
 )
@@ -48,6 +48,69 @@ class PostsClient:
 
     def __init__(self, client: Client):
         self.client = client
+
+
+    def get_analytics(
+        self,
+        ids: List,
+        end_time: str,
+        start_time: str,
+        granularity: str,
+        analytics_fields: List = None,
+    ) -> GetAnalyticsResponse:
+        """
+        Get Post analytics
+        Retrieves analytics data for specified Posts within a defined time range.
+        Args:
+            ids: A comma separated list of Post IDs. Up to 100 are allowed in a single request.
+            end_time: YYYY-MM-DDTHH:mm:ssZ. The UTC timestamp representing the end of the time range.
+            start_time: YYYY-MM-DDTHH:mm:ssZ. The UTC timestamp representing the start of the time range.
+            granularity: The granularity for the search counts results.
+            analytics_fields: A comma separated list of Analytics fields to display.
+            Returns:
+            GetAnalyticsResponse: Response data
+        """
+        url = self.client.base_url + "/2/tweets/analytics"
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        if ids is not None:
+            params["ids"] = ",".join(str(item) for item in ids)
+        if end_time is not None:
+            params["end_time"] = end_time
+        if start_time is not None:
+            params["start_time"] = start_time
+        if granularity is not None:
+            params["granularity"] = granularity
+        if analytics_fields is not None:
+            params["analytics.fields"] = ",".join(
+                str(item) for item in analytics_fields
+            )
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        if self.client.oauth2_session:
+            response = self.client.oauth2_session.get(
+                url,
+                params=params,
+                headers=headers,
+            )
+        else:
+            response = self.client.session.get(
+                url,
+                params=params,
+                headers=headers,
+            )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return GetAnalyticsResponse.model_validate(response_data)
 
 
     def get_insights_historical(
@@ -119,220 +182,7 @@ class PostsClient:
         return GetInsightsHistoricalResponse.model_validate(response_data)
 
 
-    def get_reposts(
-        self,
-        id: Any,
-        max_results: int = None,
-        pagination_token: Any = None,
-        tweet_fields: List = None,
-        expansions: List = None,
-        media_fields: List = None,
-        poll_fields: List = None,
-        user_fields: List = None,
-        place_fields: List = None,
-    ) -> GetRepostsResponse:
-        """
-        Get Reposts
-        Retrieves a list of Posts that repost a specific Post by its ID.
-        Args:
-            id: A single Post ID.
-            max_results: The maximum number of results.
-            pagination_token: This parameter is used to get the next 'page' of results.
-            tweet_fields: A comma separated list of Tweet fields to display.
-            expansions: A comma separated list of fields to expand.
-            media_fields: A comma separated list of Media fields to display.
-            poll_fields: A comma separated list of Poll fields to display.
-            user_fields: A comma separated list of User fields to display.
-            place_fields: A comma separated list of Place fields to display.
-            Returns:
-            GetRepostsResponse: Response data
-        """
-        url = self.client.base_url + "/2/tweets/{id}/retweets"
-        url = url.replace("{id}", str(id))
-        if self.client.bearer_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.bearer_token}"
-            )
-        elif self.client.access_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        params = {}
-        if max_results is not None:
-            params["max_results"] = max_results
-        if pagination_token is not None:
-            params["pagination_token"] = pagination_token
-        if tweet_fields is not None:
-            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
-        if expansions is not None:
-            params["expansions"] = ",".join(str(item) for item in expansions)
-        if media_fields is not None:
-            params["media.fields"] = ",".join(str(item) for item in media_fields)
-        if poll_fields is not None:
-            params["poll.fields"] = ",".join(str(item) for item in poll_fields)
-        if user_fields is not None:
-            params["user.fields"] = ",".join(str(item) for item in user_fields)
-        if place_fields is not None:
-            params["place.fields"] = ",".join(str(item) for item in place_fields)
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        response = self.client.session.get(
-            url,
-            params=params,
-            headers=headers,
-        )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return GetRepostsResponse.model_validate(response_data)
-
-
-    def get_insights28hr(
-        self,
-        tweet_ids: List,
-        granularity: str,
-        requested_metrics: List,
-        engagement_fields: List = None,
-    ) -> GetInsights28hrResponse:
-        """
-        Get 28-hour Post insights
-        Retrieves engagement metrics for specified Posts over the last 28 hours.
-        Args:
-            tweet_ids: List of PostIds for 28hr metrics.
-            granularity: granularity of metrics response.
-            requested_metrics: request metrics for historical request.
-            engagement_fields: A comma separated list of Engagement fields to display.
-            Returns:
-            GetInsights28hrResponse: Response data
-        """
-        url = self.client.base_url + "/2/insights/28hr"
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        params = {}
-        if tweet_ids is not None:
-            params["tweet_ids"] = ",".join(str(item) for item in tweet_ids)
-        if granularity is not None:
-            params["granularity"] = granularity
-        if requested_metrics is not None:
-            params["requested_metrics"] = ",".join(
-                str(item) for item in requested_metrics
-            )
-        if engagement_fields is not None:
-            params["engagement.fields"] = ",".join(
-                str(item) for item in engagement_fields
-            )
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        if self.client.oauth2_session:
-            response = self.client.oauth2_session.get(
-                url,
-                params=params,
-                headers=headers,
-            )
-        else:
-            response = self.client.session.get(
-                url,
-                params=params,
-                headers=headers,
-            )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return GetInsights28hrResponse.model_validate(response_data)
-
-
-    def get_counts_recent(
-        self,
-        query: str,
-        start_time: str = None,
-        end_time: str = None,
-        since_id: Any = None,
-        until_id: Any = None,
-        next_token: Any = None,
-        pagination_token: Any = None,
-        granularity: str = None,
-        search_count_fields: List = None,
-    ) -> GetCountsRecentResponse:
-        """
-        Get count of recent Posts
-        Retrieves the count of Posts from the last 7 days matching a search query.
-        Args:
-            query: One query/rule/filter for matching Posts. Refer to https://t.co/rulelength to identify the max query length.
-            start_time: YYYY-MM-DDTHH:mm:ssZ. The oldest UTC timestamp (from most recent 7 days) from which the Posts will be provided. Timestamp is in second granularity and is inclusive (i.e. 12:00:01 includes the first second of the minute).
-            end_time: YYYY-MM-DDTHH:mm:ssZ. The newest, most recent UTC timestamp to which the Posts will be provided. Timestamp is in second granularity and is exclusive (i.e. 12:00:01 excludes the first second of the minute).
-            since_id: Returns results with a Post ID greater than (that is, more recent than) the specified ID.
-            until_id: Returns results with a Post ID less than (that is, older than) the specified ID.
-            next_token: This parameter is used to get the next 'page' of results. The value used with the parameter is pulled directly from the response provided by the API, and should not be modified.
-            pagination_token: This parameter is used to get the next 'page' of results. The value used with the parameter is pulled directly from the response provided by the API, and should not be modified.
-            granularity: The granularity for the search counts results.
-            search_count_fields: A comma separated list of SearchCount fields to display.
-            Returns:
-            GetCountsRecentResponse: Response data
-        """
-        url = self.client.base_url + "/2/tweets/counts/recent"
-        if self.client.bearer_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.bearer_token}"
-            )
-        elif self.client.access_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-        params = {}
-        if query is not None:
-            params["query"] = query
-        if start_time is not None:
-            params["start_time"] = start_time
-        if end_time is not None:
-            params["end_time"] = end_time
-        if since_id is not None:
-            params["since_id"] = since_id
-        if until_id is not None:
-            params["until_id"] = until_id
-        if next_token is not None:
-            params["next_token"] = next_token
-        if pagination_token is not None:
-            params["pagination_token"] = pagination_token
-        if granularity is not None:
-            params["granularity"] = granularity
-        if search_count_fields is not None:
-            params["search_count.fields"] = ",".join(
-                str(item) for item in search_count_fields
-            )
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        response = self.client.session.get(
-            url,
-            params=params,
-            headers=headers,
-        )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return GetCountsRecentResponse.model_validate(response_data)
-
-
-    def search_all(
+    def search_recent(
         self,
         query: str,
         start_time: str = None,
@@ -349,10 +199,10 @@ class PostsClient:
         poll_fields: List = None,
         user_fields: List = None,
         place_fields: List = None,
-    ) -> SearchAllResponse:
+    ) -> SearchRecentResponse:
         """
-        Search all Posts
-        Retrieves Posts from the full archive matching a search query.
+        Search recent Posts
+        Retrieves Posts from the last 7 days matching a search query.
         Args:
             query: One query/rule/filter for matching Posts. Refer to https://t.co/rulelength to identify the max query length.
             start_time: YYYY-MM-DDTHH:mm:ssZ. The oldest UTC timestamp from which the Posts will be provided. Timestamp is in second granularity and is inclusive (i.e. 12:00:01 includes the first second of the minute).
@@ -370,9 +220,9 @@ class PostsClient:
             user_fields: A comma separated list of User fields to display.
             place_fields: A comma separated list of Place fields to display.
             Returns:
-            SearchAllResponse: Response data
+            SearchRecentResponse: Response data
         """
-        url = self.client.base_url + "/2/tweets/search/all"
+        url = self.client.base_url + "/2/tweets/search/recent"
         if self.client.bearer_token:
             self.client.session.headers["Authorization"] = (
                 f"Bearer {self.client.bearer_token}"
@@ -381,6 +231,11 @@ class PostsClient:
             self.client.session.headers["Authorization"] = (
                 f"Bearer {self.client.access_token}"
             )
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
         params = {}
         if query is not None:
             params["query"] = query
@@ -426,7 +281,7 @@ class PostsClient:
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return SearchAllResponse.model_validate(response_data)
+        return SearchRecentResponse.model_validate(response_data)
 
 
     def get_quoted(
@@ -510,70 +365,6 @@ class PostsClient:
         return GetQuotedResponse.model_validate(response_data)
 
 
-    def get_liking_users(
-        self,
-        id: Any,
-        max_results: int = None,
-        pagination_token: Any = None,
-        user_fields: List = None,
-        expansions: List = None,
-        tweet_fields: List = None,
-    ) -> GetLikingUsersResponse:
-        """
-        Get Liking Users
-        Retrieves a list of Users who liked a specific Post by its ID.
-        Args:
-            id: A single Post ID.
-            max_results: The maximum number of results.
-            pagination_token: This parameter is used to get the next 'page' of results.
-            user_fields: A comma separated list of User fields to display.
-            expansions: A comma separated list of fields to expand.
-            tweet_fields: A comma separated list of Tweet fields to display.
-            Returns:
-            GetLikingUsersResponse: Response data
-        """
-        url = self.client.base_url + "/2/tweets/{id}/liking_users"
-        url = url.replace("{id}", str(id))
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        params = {}
-        if max_results is not None:
-            params["max_results"] = max_results
-        if pagination_token is not None:
-            params["pagination_token"] = pagination_token
-        if user_fields is not None:
-            params["user.fields"] = ",".join(str(item) for item in user_fields)
-        if expansions is not None:
-            params["expansions"] = ",".join(str(item) for item in expansions)
-        if tweet_fields is not None:
-            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        if self.client.oauth2_session:
-            response = self.client.oauth2_session.get(
-                url,
-                params=params,
-                headers=headers,
-            )
-        else:
-            response = self.client.session.get(
-                url,
-                params=params,
-                headers=headers,
-            )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return GetLikingUsersResponse.model_validate(response_data)
-
-
     def get_counts_all(
         self,
         query: str,
@@ -649,44 +440,117 @@ class PostsClient:
         return GetCountsAllResponse.model_validate(response_data)
 
 
-    def get_analytics(
+    def get_counts_recent(
         self,
-        ids: List,
-        end_time: str,
-        start_time: str,
-        granularity: str,
-        analytics_fields: List = None,
-    ) -> GetAnalyticsResponse:
+        query: str,
+        start_time: str = None,
+        end_time: str = None,
+        since_id: Any = None,
+        until_id: Any = None,
+        next_token: Any = None,
+        pagination_token: Any = None,
+        granularity: str = None,
+        search_count_fields: List = None,
+    ) -> GetCountsRecentResponse:
         """
-        Get Post analytics
-        Retrieves analytics data for specified Posts within a defined time range.
+        Get count of recent Posts
+        Retrieves the count of Posts from the last 7 days matching a search query.
         Args:
-            ids: A comma separated list of Post IDs. Up to 100 are allowed in a single request.
-            end_time: YYYY-MM-DDTHH:mm:ssZ. The UTC timestamp representing the end of the time range.
-            start_time: YYYY-MM-DDTHH:mm:ssZ. The UTC timestamp representing the start of the time range.
+            query: One query/rule/filter for matching Posts. Refer to https://t.co/rulelength to identify the max query length.
+            start_time: YYYY-MM-DDTHH:mm:ssZ. The oldest UTC timestamp (from most recent 7 days) from which the Posts will be provided. Timestamp is in second granularity and is inclusive (i.e. 12:00:01 includes the first second of the minute).
+            end_time: YYYY-MM-DDTHH:mm:ssZ. The newest, most recent UTC timestamp to which the Posts will be provided. Timestamp is in second granularity and is exclusive (i.e. 12:00:01 excludes the first second of the minute).
+            since_id: Returns results with a Post ID greater than (that is, more recent than) the specified ID.
+            until_id: Returns results with a Post ID less than (that is, older than) the specified ID.
+            next_token: This parameter is used to get the next 'page' of results. The value used with the parameter is pulled directly from the response provided by the API, and should not be modified.
+            pagination_token: This parameter is used to get the next 'page' of results. The value used with the parameter is pulled directly from the response provided by the API, and should not be modified.
             granularity: The granularity for the search counts results.
-            analytics_fields: A comma separated list of Analytics fields to display.
+            search_count_fields: A comma separated list of SearchCount fields to display.
             Returns:
-            GetAnalyticsResponse: Response data
+            GetCountsRecentResponse: Response data
         """
-        url = self.client.base_url + "/2/tweets/analytics"
+        url = self.client.base_url + "/2/tweets/counts/recent"
+        if self.client.bearer_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.bearer_token}"
+            )
+        elif self.client.access_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+        params = {}
+        if query is not None:
+            params["query"] = query
+        if start_time is not None:
+            params["start_time"] = start_time
+        if end_time is not None:
+            params["end_time"] = end_time
+        if since_id is not None:
+            params["since_id"] = since_id
+        if until_id is not None:
+            params["until_id"] = until_id
+        if next_token is not None:
+            params["next_token"] = next_token
+        if pagination_token is not None:
+            params["pagination_token"] = pagination_token
+        if granularity is not None:
+            params["granularity"] = granularity
+        if search_count_fields is not None:
+            params["search_count.fields"] = ",".join(
+                str(item) for item in search_count_fields
+            )
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        response = self.client.session.get(
+            url,
+            params=params,
+            headers=headers,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return GetCountsRecentResponse.model_validate(response_data)
+
+
+    def get_insights28hr(
+        self,
+        tweet_ids: List,
+        granularity: str,
+        requested_metrics: List,
+        engagement_fields: List = None,
+    ) -> GetInsights28hrResponse:
+        """
+        Get 28-hour Post insights
+        Retrieves engagement metrics for specified Posts over the last 28 hours.
+        Args:
+            tweet_ids: List of PostIds for 28hr metrics.
+            granularity: granularity of metrics response.
+            requested_metrics: request metrics for historical request.
+            engagement_fields: A comma separated list of Engagement fields to display.
+            Returns:
+            GetInsights28hrResponse: Response data
+        """
+        url = self.client.base_url + "/2/insights/28hr"
         # Ensure we have a valid access token
         if self.client.oauth2_auth and self.client.token:
             # Check if token needs refresh
             if self.client.is_token_expired():
                 self.client.refresh_token()
         params = {}
-        if ids is not None:
-            params["ids"] = ",".join(str(item) for item in ids)
-        if end_time is not None:
-            params["end_time"] = end_time
-        if start_time is not None:
-            params["start_time"] = start_time
+        if tweet_ids is not None:
+            params["tweet_ids"] = ",".join(str(item) for item in tweet_ids)
         if granularity is not None:
             params["granularity"] = granularity
-        if analytics_fields is not None:
-            params["analytics.fields"] = ",".join(
-                str(item) for item in analytics_fields
+        if requested_metrics is not None:
+            params["requested_metrics"] = ",".join(
+                str(item) for item in requested_metrics
+            )
+        if engagement_fields is not None:
+            params["engagement.fields"] = ",".join(
+                str(item) for item in engagement_fields
             )
         headers = {}
         # Prepare request data
@@ -709,7 +573,71 @@ class PostsClient:
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return GetAnalyticsResponse.model_validate(response_data)
+        return GetInsights28hrResponse.model_validate(response_data)
+
+
+    def get_liking_users(
+        self,
+        id: Any,
+        max_results: int = None,
+        pagination_token: Any = None,
+        user_fields: List = None,
+        expansions: List = None,
+        tweet_fields: List = None,
+    ) -> GetLikingUsersResponse:
+        """
+        Get Liking Users
+        Retrieves a list of Users who liked a specific Post by its ID.
+        Args:
+            id: A single Post ID.
+            max_results: The maximum number of results.
+            pagination_token: This parameter is used to get the next 'page' of results.
+            user_fields: A comma separated list of User fields to display.
+            expansions: A comma separated list of fields to expand.
+            tweet_fields: A comma separated list of Tweet fields to display.
+            Returns:
+            GetLikingUsersResponse: Response data
+        """
+        url = self.client.base_url + "/2/tweets/{id}/liking_users"
+        url = url.replace("{id}", str(id))
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        if max_results is not None:
+            params["max_results"] = max_results
+        if pagination_token is not None:
+            params["pagination_token"] = pagination_token
+        if user_fields is not None:
+            params["user.fields"] = ",".join(str(item) for item in user_fields)
+        if expansions is not None:
+            params["expansions"] = ",".join(str(item) for item in expansions)
+        if tweet_fields is not None:
+            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        if self.client.oauth2_session:
+            response = self.client.oauth2_session.get(
+                url,
+                params=params,
+                headers=headers,
+            )
+        else:
+            response = self.client.session.get(
+                url,
+                params=params,
+                headers=headers,
+            )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return GetLikingUsersResponse.model_validate(response_data)
 
 
     def get_by_ids(
@@ -830,72 +758,7 @@ class PostsClient:
         return CreateResponse.model_validate(response_data)
 
 
-    def get_reposted_by(
-        self,
-        id: Any,
-        max_results: int = None,
-        pagination_token: Any = None,
-        user_fields: List = None,
-        expansions: List = None,
-        tweet_fields: List = None,
-    ) -> GetRepostedByResponse:
-        """
-        Get Reposted by
-        Retrieves a list of Users who reposted a specific Post by its ID.
-        Args:
-            id: A single Post ID.
-            max_results: The maximum number of results.
-            pagination_token: This parameter is used to get the next 'page' of results.
-            user_fields: A comma separated list of User fields to display.
-            expansions: A comma separated list of fields to expand.
-            tweet_fields: A comma separated list of Tweet fields to display.
-            Returns:
-            GetRepostedByResponse: Response data
-        """
-        url = self.client.base_url + "/2/tweets/{id}/retweeted_by"
-        url = url.replace("{id}", str(id))
-        if self.client.bearer_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.bearer_token}"
-            )
-        elif self.client.access_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        params = {}
-        if max_results is not None:
-            params["max_results"] = max_results
-        if pagination_token is not None:
-            params["pagination_token"] = pagination_token
-        if user_fields is not None:
-            params["user.fields"] = ",".join(str(item) for item in user_fields)
-        if expansions is not None:
-            params["expansions"] = ",".join(str(item) for item in expansions)
-        if tweet_fields is not None:
-            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        response = self.client.session.get(
-            url,
-            params=params,
-            headers=headers,
-        )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return GetRepostedByResponse.model_validate(response_data)
-
-
-    def search_recent(
+    def search_all(
         self,
         query: str,
         start_time: str = None,
@@ -912,10 +775,10 @@ class PostsClient:
         poll_fields: List = None,
         user_fields: List = None,
         place_fields: List = None,
-    ) -> SearchRecentResponse:
+    ) -> SearchAllResponse:
         """
-        Search recent Posts
-        Retrieves Posts from the last 7 days matching a search query.
+        Search all Posts
+        Retrieves Posts from the full archive matching a search query.
         Args:
             query: One query/rule/filter for matching Posts. Refer to https://t.co/rulelength to identify the max query length.
             start_time: YYYY-MM-DDTHH:mm:ssZ. The oldest UTC timestamp from which the Posts will be provided. Timestamp is in second granularity and is inclusive (i.e. 12:00:01 includes the first second of the minute).
@@ -933,9 +796,9 @@ class PostsClient:
             user_fields: A comma separated list of User fields to display.
             place_fields: A comma separated list of Place fields to display.
             Returns:
-            SearchRecentResponse: Response data
+            SearchAllResponse: Response data
         """
-        url = self.client.base_url + "/2/tweets/search/recent"
+        url = self.client.base_url + "/2/tweets/search/all"
         if self.client.bearer_token:
             self.client.session.headers["Authorization"] = (
                 f"Bearer {self.client.bearer_token}"
@@ -944,11 +807,6 @@ class PostsClient:
             self.client.session.headers["Authorization"] = (
                 f"Bearer {self.client.access_token}"
             )
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
         params = {}
         if query is not None:
             params["query"] = query
@@ -994,7 +852,7 @@ class PostsClient:
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return SearchRecentResponse.model_validate(response_data)
+        return SearchAllResponse.model_validate(response_data)
 
 
     def get_by_id(
@@ -1105,6 +963,148 @@ class PostsClient:
         response_data = response.json()
         # Convert to Pydantic model if applicable
         return DeleteResponse.model_validate(response_data)
+
+
+    def get_reposted_by(
+        self,
+        id: Any,
+        max_results: int = None,
+        pagination_token: Any = None,
+        user_fields: List = None,
+        expansions: List = None,
+        tweet_fields: List = None,
+    ) -> GetRepostedByResponse:
+        """
+        Get Reposted by
+        Retrieves a list of Users who reposted a specific Post by its ID.
+        Args:
+            id: A single Post ID.
+            max_results: The maximum number of results.
+            pagination_token: This parameter is used to get the next 'page' of results.
+            user_fields: A comma separated list of User fields to display.
+            expansions: A comma separated list of fields to expand.
+            tweet_fields: A comma separated list of Tweet fields to display.
+            Returns:
+            GetRepostedByResponse: Response data
+        """
+        url = self.client.base_url + "/2/tweets/{id}/retweeted_by"
+        url = url.replace("{id}", str(id))
+        if self.client.bearer_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.bearer_token}"
+            )
+        elif self.client.access_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        if max_results is not None:
+            params["max_results"] = max_results
+        if pagination_token is not None:
+            params["pagination_token"] = pagination_token
+        if user_fields is not None:
+            params["user.fields"] = ",".join(str(item) for item in user_fields)
+        if expansions is not None:
+            params["expansions"] = ",".join(str(item) for item in expansions)
+        if tweet_fields is not None:
+            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        response = self.client.session.get(
+            url,
+            params=params,
+            headers=headers,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return GetRepostedByResponse.model_validate(response_data)
+
+
+    def get_reposts(
+        self,
+        id: Any,
+        max_results: int = None,
+        pagination_token: Any = None,
+        tweet_fields: List = None,
+        expansions: List = None,
+        media_fields: List = None,
+        poll_fields: List = None,
+        user_fields: List = None,
+        place_fields: List = None,
+    ) -> GetRepostsResponse:
+        """
+        Get Reposts
+        Retrieves a list of Posts that repost a specific Post by its ID.
+        Args:
+            id: A single Post ID.
+            max_results: The maximum number of results.
+            pagination_token: This parameter is used to get the next 'page' of results.
+            tweet_fields: A comma separated list of Tweet fields to display.
+            expansions: A comma separated list of fields to expand.
+            media_fields: A comma separated list of Media fields to display.
+            poll_fields: A comma separated list of Poll fields to display.
+            user_fields: A comma separated list of User fields to display.
+            place_fields: A comma separated list of Place fields to display.
+            Returns:
+            GetRepostsResponse: Response data
+        """
+        url = self.client.base_url + "/2/tweets/{id}/retweets"
+        url = url.replace("{id}", str(id))
+        if self.client.bearer_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.bearer_token}"
+            )
+        elif self.client.access_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        if max_results is not None:
+            params["max_results"] = max_results
+        if pagination_token is not None:
+            params["pagination_token"] = pagination_token
+        if tweet_fields is not None:
+            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
+        if expansions is not None:
+            params["expansions"] = ",".join(str(item) for item in expansions)
+        if media_fields is not None:
+            params["media.fields"] = ",".join(str(item) for item in media_fields)
+        if poll_fields is not None:
+            params["poll.fields"] = ",".join(str(item) for item in poll_fields)
+        if user_fields is not None:
+            params["user.fields"] = ",".join(str(item) for item in user_fields)
+        if place_fields is not None:
+            params["place.fields"] = ",".join(str(item) for item in place_fields)
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        response = self.client.session.get(
+            url,
+            params=params,
+            headers=headers,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return GetRepostsResponse.model_validate(response_data)
 
 
     def hide_reply(
