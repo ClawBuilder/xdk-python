@@ -26,7 +26,7 @@ class OAuth2PKCEAuth:
 
     def __init__(
         self,
-        base_url: str = "https://api.twitter.com",
+        base_url: str = "https://api.x.com",
         client_id: str = None,
         client_secret: str = None,
         redirect_uri: str = None,
@@ -35,7 +35,7 @@ class OAuth2PKCEAuth:
     ):
         """Initialize the OAuth2 PKCE authentication.
         Args:
-            base_url: The base URL for the X API.
+            base_url: The base URL for the X API token endpoint (defaults to https://api.x.com).
             client_id: The client ID for the X API.
             client_secret: The client secret for the X API.
             redirect_uri: The redirect URI for OAuth2 authorization.
@@ -99,8 +99,10 @@ class OAuth2PKCEAuth:
         self.oauth2_session = OAuth2Session(
             client_id=self.client_id, redirect_uri=self.redirect_uri, scope=self.scope
         )
+        # Authorization URL is always https://x.com/i/oauth2/authorize
+        # (not using base_url since it's for API calls, not authorization)
         auth_url, state = self.oauth2_session.authorization_url(
-            f"{self.base_url}/oauth2/authorize",
+            "https://x.com/i/oauth2/authorize",
             code_challenge=self.code_challenge,
             code_challenge_method="S256",
         )
@@ -119,7 +121,7 @@ class OAuth2PKCEAuth:
                 "OAuth2 session not initialized. Call get_authorization_url first."
             )
         self.token = self.oauth2_session.fetch_token(
-            f"{self.base_url}/oauth2/token",
+            f"{self.base_url}/2/oauth2/token",
             authorization_response=authorization_response,
             code_verifier=self.code_verifier,
             client_id=self.client_id,
@@ -135,7 +137,7 @@ class OAuth2PKCEAuth:
         """
         if not self.oauth2_session or not self.token:
             raise ValueError("No token to refresh")
-        refresh_url = f"{self.base_url}/oauth2/token"
+        refresh_url = f"{self.base_url}/2/oauth2/token"
         self.token = self.oauth2_session.refresh_token(
             refresh_url, client_id=self.client_id, client_secret=self.client_secret
         )

@@ -16,11 +16,20 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get_posts
+# Models for remove_member_by_user_id
 
 
-class GetPostsResponse(BaseModel):
-    """Response model for get_posts"""
+class RemoveMemberByUserIdResponse(BaseModel):
+    """Response model for remove_member_by_user_id"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_followers
+
+
+class GetFollowersResponse(BaseModel):
+    """Response model for get_followers"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -49,11 +58,11 @@ class AddMemberResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for remove_member_by_user_id
+# Models for get_posts
 
 
-class RemoveMemberByUserIdResponse(BaseModel):
-    """Response model for remove_member_by_user_id"""
+class GetPostsResponse(BaseModel):
+    """Response model for get_posts"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -87,15 +96,6 @@ class UpdateResponse(BaseModel):
 
 class DeleteResponse(BaseModel):
     """Response model for delete"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_followers
-
-
-class GetFollowersResponse(BaseModel):
-    """Response model for get_followers"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 

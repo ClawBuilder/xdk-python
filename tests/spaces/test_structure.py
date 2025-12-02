@@ -28,6 +28,58 @@ class TestSpacesStructure:
         self.spaces_client = getattr(self.client, "spaces")
 
 
+    def test_get_by_creator_ids_exists(self):
+        """Test that get_by_creator_ids method exists with correct signature."""
+        # Check method exists
+        method = getattr(SpacesClient, "get_by_creator_ids", None)
+        assert (
+            method is not None
+        ), f"Method get_by_creator_ids does not exist on SpacesClient"
+        # Check method is callable
+        assert callable(method), f"get_by_creator_ids is not callable"
+        # Check method signature
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have 'self' as first parameter
+        assert (
+            len(params) >= 1
+        ), f"get_by_creator_ids should have at least 'self' parameter"
+        assert (
+            params[0] == "self"
+        ), f"First parameter should be 'self', got '{params[0]}'"
+        # Check required parameters exist (excluding 'self')
+        required_params = [
+            "user_ids",
+        ]
+        for required_param in required_params:
+            assert (
+                required_param in params
+            ), f"Required parameter '{required_param}' missing from get_by_creator_ids"
+        # Check optional parameters have defaults (excluding 'self')
+        optional_params = [
+            "space.fields",
+            "expansions",
+            "user.fields",
+            "topic.fields",
+        ]
+        for optional_param in optional_params:
+            if optional_param in params:
+                param_obj = sig.parameters[optional_param]
+                assert (
+                    param_obj.default is not inspect.Parameter.empty
+                ), f"Optional parameter '{optional_param}' should have a default value"
+
+
+    def test_get_by_creator_ids_return_annotation(self):
+        """Test that get_by_creator_ids has proper return type annotation."""
+        method = getattr(SpacesClient, "get_by_creator_ids")
+        sig = inspect.signature(method)
+        # Check return annotation exists
+        assert (
+            sig.return_annotation is not inspect.Signature.empty
+        ), f"Method get_by_creator_ids should have return type annotation"
+
+
     def test_search_exists(self):
         """Test that search method exists with correct signature."""
         # Check method exists
@@ -126,84 +178,29 @@ class TestSpacesStructure:
         ), f"Method get_by_id should have return type annotation"
 
 
-    def test_get_posts_exists(self):
-        """Test that get_posts method exists with correct signature."""
+    def test_get_by_ids_exists(self):
+        """Test that get_by_ids method exists with correct signature."""
         # Check method exists
-        method = getattr(SpacesClient, "get_posts", None)
-        assert method is not None, f"Method get_posts does not exist on SpacesClient"
+        method = getattr(SpacesClient, "get_by_ids", None)
+        assert method is not None, f"Method get_by_ids does not exist on SpacesClient"
         # Check method is callable
-        assert callable(method), f"get_posts is not callable"
+        assert callable(method), f"get_by_ids is not callable"
         # Check method signature
         sig = inspect.signature(method)
         params = list(sig.parameters.keys())
         # Should have 'self' as first parameter
-        assert len(params) >= 1, f"get_posts should have at least 'self' parameter"
+        assert len(params) >= 1, f"get_by_ids should have at least 'self' parameter"
         assert (
             params[0] == "self"
         ), f"First parameter should be 'self', got '{params[0]}'"
         # Check required parameters exist (excluding 'self')
         required_params = [
-            "id",
+            "ids",
         ]
         for required_param in required_params:
             assert (
                 required_param in params
-            ), f"Required parameter '{required_param}' missing from get_posts"
-        # Check optional parameters have defaults (excluding 'self')
-        optional_params = [
-            "max_results",
-            "tweet.fields",
-            "expansions",
-            "media.fields",
-            "poll.fields",
-            "user.fields",
-            "place.fields",
-        ]
-        for optional_param in optional_params:
-            if optional_param in params:
-                param_obj = sig.parameters[optional_param]
-                assert (
-                    param_obj.default is not inspect.Parameter.empty
-                ), f"Optional parameter '{optional_param}' should have a default value"
-
-
-    def test_get_posts_return_annotation(self):
-        """Test that get_posts has proper return type annotation."""
-        method = getattr(SpacesClient, "get_posts")
-        sig = inspect.signature(method)
-        # Check return annotation exists
-        assert (
-            sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_posts should have return type annotation"
-
-
-    def test_get_by_creator_ids_exists(self):
-        """Test that get_by_creator_ids method exists with correct signature."""
-        # Check method exists
-        method = getattr(SpacesClient, "get_by_creator_ids", None)
-        assert (
-            method is not None
-        ), f"Method get_by_creator_ids does not exist on SpacesClient"
-        # Check method is callable
-        assert callable(method), f"get_by_creator_ids is not callable"
-        # Check method signature
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have 'self' as first parameter
-        assert (
-            len(params) >= 1
-        ), f"get_by_creator_ids should have at least 'self' parameter"
-        assert (
-            params[0] == "self"
-        ), f"First parameter should be 'self', got '{params[0]}'"
-        # Check required parameters exist (excluding 'self')
-        required_params = [
-            "user_ids",
-        ]
-        for required_param in required_params:
-            assert (
-                required_param in params
-            ), f"Required parameter '{required_param}' missing from get_by_creator_ids"
+            ), f"Required parameter '{required_param}' missing from get_by_ids"
         # Check optional parameters have defaults (excluding 'self')
         optional_params = [
             "space.fields",
@@ -219,14 +216,14 @@ class TestSpacesStructure:
                 ), f"Optional parameter '{optional_param}' should have a default value"
 
 
-    def test_get_by_creator_ids_return_annotation(self):
-        """Test that get_by_creator_ids has proper return type annotation."""
-        method = getattr(SpacesClient, "get_by_creator_ids")
+    def test_get_by_ids_return_annotation(self):
+        """Test that get_by_ids has proper return type annotation."""
+        method = getattr(SpacesClient, "get_by_ids")
         sig = inspect.signature(method)
         # Check return annotation exists
         assert (
             sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_by_creator_ids should have return type annotation"
+        ), f"Method get_by_ids should have return type annotation"
 
 
     def test_get_buyers_exists(self):
@@ -297,35 +294,38 @@ class TestSpacesStructure:
         ), f"Paginated method get_buyers should have pagination parameters"
 
 
-    def test_get_by_ids_exists(self):
-        """Test that get_by_ids method exists with correct signature."""
+    def test_get_posts_exists(self):
+        """Test that get_posts method exists with correct signature."""
         # Check method exists
-        method = getattr(SpacesClient, "get_by_ids", None)
-        assert method is not None, f"Method get_by_ids does not exist on SpacesClient"
+        method = getattr(SpacesClient, "get_posts", None)
+        assert method is not None, f"Method get_posts does not exist on SpacesClient"
         # Check method is callable
-        assert callable(method), f"get_by_ids is not callable"
+        assert callable(method), f"get_posts is not callable"
         # Check method signature
         sig = inspect.signature(method)
         params = list(sig.parameters.keys())
         # Should have 'self' as first parameter
-        assert len(params) >= 1, f"get_by_ids should have at least 'self' parameter"
+        assert len(params) >= 1, f"get_posts should have at least 'self' parameter"
         assert (
             params[0] == "self"
         ), f"First parameter should be 'self', got '{params[0]}'"
         # Check required parameters exist (excluding 'self')
         required_params = [
-            "ids",
+            "id",
         ]
         for required_param in required_params:
             assert (
                 required_param in params
-            ), f"Required parameter '{required_param}' missing from get_by_ids"
+            ), f"Required parameter '{required_param}' missing from get_posts"
         # Check optional parameters have defaults (excluding 'self')
         optional_params = [
-            "space.fields",
+            "max_results",
+            "tweet.fields",
             "expansions",
+            "media.fields",
+            "poll.fields",
             "user.fields",
-            "topic.fields",
+            "place.fields",
         ]
         for optional_param in optional_params:
             if optional_param in params:
@@ -335,25 +335,25 @@ class TestSpacesStructure:
                 ), f"Optional parameter '{optional_param}' should have a default value"
 
 
-    def test_get_by_ids_return_annotation(self):
-        """Test that get_by_ids has proper return type annotation."""
-        method = getattr(SpacesClient, "get_by_ids")
+    def test_get_posts_return_annotation(self):
+        """Test that get_posts has proper return type annotation."""
+        method = getattr(SpacesClient, "get_posts")
         sig = inspect.signature(method)
         # Check return annotation exists
         assert (
             sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_by_ids should have return type annotation"
+        ), f"Method get_posts should have return type annotation"
 
 
     def test_all_expected_methods_exist(self):
         """Test that all expected methods exist on the client."""
         expected_methods = [
+            "get_by_creator_ids",
             "search",
             "get_by_id",
-            "get_posts",
-            "get_by_creator_ids",
-            "get_buyers",
             "get_by_ids",
+            "get_buyers",
+            "get_posts",
         ]
         for expected_method in expected_methods:
             assert hasattr(

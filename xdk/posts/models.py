@@ -16,51 +16,6 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get_analytics
-
-
-class GetAnalyticsResponse(BaseModel):
-    """Response model for get_analytics"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_insights_historical
-
-
-class GetInsightsHistoricalResponse(BaseModel):
-    """Response model for get_insights_historical"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for search_recent
-
-
-class SearchRecentResponse(BaseModel):
-    """Response model for search_recent"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_quoted
-
-
-class GetQuotedResponse(BaseModel):
-    """Response model for get_quoted"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_counts_all
-
-
-class GetCountsAllResponse(BaseModel):
-    """Response model for get_counts_all"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for get_counts_recent
 
 
@@ -70,20 +25,11 @@ class GetCountsRecentResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for get_insights28hr
+# Models for search_recent
 
 
-class GetInsights28hrResponse(BaseModel):
-    """Response model for get_insights28hr"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_liking_users
-
-
-class GetLikingUsersResponse(BaseModel):
-    """Response model for get_liking_users"""
+class SearchRecentResponse(BaseModel):
+    """Response model for search_recent"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -112,11 +58,29 @@ class CreateResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for search_all
+# Models for get_reposts
 
 
-class SearchAllResponse(BaseModel):
-    """Response model for search_all"""
+class GetRepostsResponse(BaseModel):
+    """Response model for get_reposts"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_quoted
+
+
+class GetQuotedResponse(BaseModel):
+    """Response model for get_quoted"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_analytics
+
+
+class GetAnalyticsResponse(BaseModel):
+    """Response model for get_analytics"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -139,20 +103,29 @@ class DeleteResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
+# Models for get_insights28hr
+
+
+class GetInsights28hrResponse(BaseModel):
+    """Response model for get_insights28hr"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for search_all
+
+
+class SearchAllResponse(BaseModel):
+    """Response model for search_all"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for get_reposted_by
 
 
 class GetRepostedByResponse(BaseModel):
     """Response model for get_reposted_by"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_reposts
-
-
-class GetRepostsResponse(BaseModel):
-    """Response model for get_reposts"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -168,5 +141,32 @@ class HideReplyRequest(BaseModel):
 
 class HideReplyResponse(BaseModel):
     """Response model for hide_reply"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_liking_users
+
+
+class GetLikingUsersResponse(BaseModel):
+    """Response model for get_liking_users"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_insights_historical
+
+
+class GetInsightsHistoricalResponse(BaseModel):
+    """Response model for get_insights_historical"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_counts_all
+
+
+class GetCountsAllResponse(BaseModel):
+    """Response model for get_counts_all"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

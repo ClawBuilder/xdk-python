@@ -25,6 +25,24 @@ class GetStreamLinksResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
+# Models for create_stream_link
+
+
+class CreateStreamLinkResponse(BaseModel):
+    """Response model for create_stream_link"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for delete_stream_link
+
+
+class DeleteStreamLinkResponse(BaseModel):
+    """Response model for delete_stream_link"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for get
 
 
@@ -45,24 +63,6 @@ class CreateRequest(BaseModel):
 
 class CreateResponse(BaseModel):
     """Response model for create"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for create_stream_link
-
-
-class CreateStreamLinkResponse(BaseModel):
-    """Response model for create_stream_link"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for delete_stream_link
-
-
-class DeleteStreamLinkResponse(BaseModel):
-    """Response model for delete_stream_link"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 

@@ -16,20 +16,11 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for delete_subscription
+# Models for get_subscription_count
 
 
-class DeleteSubscriptionResponse(BaseModel):
-    """Response model for delete_subscription"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for create_replay_job
-
-
-class CreateReplayJobResponse(BaseModel):
-    """Response model for create_replay_job"""
+class GetSubscriptionCountResponse(BaseModel):
+    """Response model for get_subscription_count"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -58,11 +49,11 @@ class CreateSubscriptionResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for get_subscription_count
+# Models for create_replay_job
 
 
-class GetSubscriptionCountResponse(BaseModel):
-    """Response model for get_subscription_count"""
+class CreateReplayJobResponse(BaseModel):
+    """Response model for create_replay_job"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -72,5 +63,14 @@ class GetSubscriptionCountResponse(BaseModel):
 
 class GetSubscriptionsResponse(BaseModel):
     """Response model for get_subscriptions"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for delete_subscription
+
+
+class DeleteSubscriptionResponse(BaseModel):
+    """Response model for delete_subscription"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

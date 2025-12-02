@@ -21,13 +21,13 @@ import time
 if TYPE_CHECKING:
     from ..client import Client
 from .models import (
-    DeleteSubscriptionResponse,
-    CreateReplayJobResponse,
+    GetSubscriptionCountResponse,
     ValidateSubscriptionResponse,
     CreateSubscriptionRequest,
     CreateSubscriptionResponse,
-    GetSubscriptionCountResponse,
+    CreateReplayJobResponse,
     GetSubscriptionsResponse,
+    DeleteSubscriptionResponse,
 )
 
 
@@ -39,24 +39,16 @@ class AccountActivityClient:
         self.client = client
 
 
-    def delete_subscription(
-        self, webhook_id: Any, user_id: Any
-    ) -> DeleteSubscriptionResponse:
+    def get_subscription_count(
+        self,
+    ) -> GetSubscriptionCountResponse:
         """
-        Delete subscription
-        Deletes an Account Activity subscription for the given webhook and user ID.
-        Args:
-            webhook_id: The webhook ID to check subscription against.
-            user_id: User ID to unsubscribe from.
-            Returns:
-            DeleteSubscriptionResponse: Response data
+        Get subscription count
+        Retrieves a count of currently active Account Activity subscriptions.
+        Returns:
+            GetSubscriptionCountResponse: Response data
         """
-        url = (
-            self.client.base_url
-            + "/2/account_activity/webhooks/{webhook_id}/subscriptions/{user_id}/all"
-        )
-        url = url.replace("{webhook_id}", str(webhook_id))
-        url = url.replace("{user_id}", str(user_id))
+        url = self.client.base_url + "/2/account_activity/subscriptions/count"
         if self.client.bearer_token:
             self.client.session.headers["Authorization"] = (
                 f"Bearer {self.client.bearer_token}"
@@ -70,7 +62,7 @@ class AccountActivityClient:
         # Prepare request data
         json_data = None
         # Make the request
-        response = self.client.session.delete(
+        response = self.client.session.get(
             url,
             params=params,
             headers=headers,
@@ -80,55 +72,7 @@ class AccountActivityClient:
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return DeleteSubscriptionResponse.model_validate(response_data)
-
-
-    def create_replay_job(
-        self, webhook_id: Any, from_date: str, to_date: str
-    ) -> CreateReplayJobResponse:
-        """
-        Create replay job
-        Creates a replay job to retrieve activities from up to the past 5 days for all subscriptions associated with a given webhook.
-        Args:
-            webhook_id: The unique identifier for the webhook configuration.
-            from_date: The oldest (starting) UTC timestamp (inclusive) from which events will be provided, in `yyyymmddhhmm` format.
-            to_date: The latest (ending) UTC timestamp (exclusive) up to which events will be provided, in `yyyymmddhhmm` format.
-            Returns:
-            CreateReplayJobResponse: Response data
-        """
-        url = (
-            self.client.base_url
-            + "/2/account_activity/replay/webhooks/{webhook_id}/subscriptions/all"
-        )
-        url = url.replace("{webhook_id}", str(webhook_id))
-        if self.client.bearer_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.bearer_token}"
-            )
-        elif self.client.access_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-        params = {}
-        if from_date is not None:
-            params["from_date"] = from_date
-        if to_date is not None:
-            params["to_date"] = to_date
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        response = self.client.session.post(
-            url,
-            params=params,
-            headers=headers,
-        )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return CreateReplayJobResponse.model_validate(response_data)
+        return GetSubscriptionCountResponse.model_validate(response_data)
 
 
     def validate_subscription(self, webhook_id: Any) -> ValidateSubscriptionResponse:
@@ -231,16 +175,24 @@ class AccountActivityClient:
         return CreateSubscriptionResponse.model_validate(response_data)
 
 
-    def get_subscription_count(
-        self,
-    ) -> GetSubscriptionCountResponse:
+    def create_replay_job(
+        self, webhook_id: Any, from_date: str, to_date: str
+    ) -> CreateReplayJobResponse:
         """
-        Get subscription count
-        Retrieves a count of currently active Account Activity subscriptions.
-        Returns:
-            GetSubscriptionCountResponse: Response data
+        Create replay job
+        Creates a replay job to retrieve activities from up to the past 5 days for all subscriptions associated with a given webhook.
+        Args:
+            webhook_id: The unique identifier for the webhook configuration.
+            from_date: The oldest (starting) UTC timestamp (inclusive) from which events will be provided, in `yyyymmddhhmm` format.
+            to_date: The latest (ending) UTC timestamp (exclusive) up to which events will be provided, in `yyyymmddhhmm` format.
+            Returns:
+            CreateReplayJobResponse: Response data
         """
-        url = self.client.base_url + "/2/account_activity/subscriptions/count"
+        url = (
+            self.client.base_url
+            + "/2/account_activity/replay/webhooks/{webhook_id}/subscriptions/all"
+        )
+        url = url.replace("{webhook_id}", str(webhook_id))
         if self.client.bearer_token:
             self.client.session.headers["Authorization"] = (
                 f"Bearer {self.client.bearer_token}"
@@ -250,11 +202,15 @@ class AccountActivityClient:
                 f"Bearer {self.client.access_token}"
             )
         params = {}
+        if from_date is not None:
+            params["from_date"] = from_date
+        if to_date is not None:
+            params["to_date"] = to_date
         headers = {}
         # Prepare request data
         json_data = None
         # Make the request
-        response = self.client.session.get(
+        response = self.client.session.post(
             url,
             params=params,
             headers=headers,
@@ -264,7 +220,7 @@ class AccountActivityClient:
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return GetSubscriptionCountResponse.model_validate(response_data)
+        return CreateReplayJobResponse.model_validate(response_data)
 
 
     def get_subscriptions(self, webhook_id: Any) -> GetSubscriptionsResponse:
@@ -305,3 +261,47 @@ class AccountActivityClient:
         response_data = response.json()
         # Convert to Pydantic model if applicable
         return GetSubscriptionsResponse.model_validate(response_data)
+
+
+    def delete_subscription(
+        self, webhook_id: Any, user_id: Any
+    ) -> DeleteSubscriptionResponse:
+        """
+        Delete subscription
+        Deletes an Account Activity subscription for the given webhook and user ID.
+        Args:
+            webhook_id: The webhook ID to check subscription against.
+            user_id: User ID to unsubscribe from.
+            Returns:
+            DeleteSubscriptionResponse: Response data
+        """
+        url = (
+            self.client.base_url
+            + "/2/account_activity/webhooks/{webhook_id}/subscriptions/{user_id}/all"
+        )
+        url = url.replace("{webhook_id}", str(webhook_id))
+        url = url.replace("{user_id}", str(user_id))
+        if self.client.bearer_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.bearer_token}"
+            )
+        elif self.client.access_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+        params = {}
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        response = self.client.session.delete(
+            url,
+            params=params,
+            headers=headers,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return DeleteSubscriptionResponse.model_validate(response_data)

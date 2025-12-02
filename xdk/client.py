@@ -17,41 +17,41 @@ from typing import Dict, List, Optional, Union, Any, Callable
 from .oauth2_auth import OAuth2PKCEAuth
 from .paginator import Cursor, cursor, PaginationError
 
+from .webhooks.client import WebhooksClient
+
+from .communities.client import CommunitiesClient
+
+from .general.client import GeneralClient
+
+from .compliance.client import ComplianceClient
+
+from .news.client import NewsClient
+
+from .activity.client import ActivityClient
+
+from .connections.client import ConnectionsClient
+
+from .usage.client import UsageClient
+
+from .community_notes.client import CommunityNotesClient
+
+from .posts.client import PostsClient
+
 from .lists.client import ListsClient
+
+from .account_activity.client import AccountActivityClient
 
 from .users.client import UsersClient
 
 from .spaces.client import SpacesClient
 
-from .trends.client import TrendsClient
-
-from .compliance.client import ComplianceClient
-
-from .webhooks.client import WebhooksClient
-
-from .general.client import GeneralClient
-
-from .connections.client import ConnectionsClient
-
-from .direct_messages.client import DirectMessagesClient
-
-from .community_notes.client import CommunityNotesClient
-
-from .news.client import NewsClient
-
-from .communities.client import CommunitiesClient
-
-from .activity.client import ActivityClient
-
-from .posts.client import PostsClient
+from .media.client import MediaClient
 
 from .stream.client import StreamClient
 
-from .media.client import MediaClient
+from .trends.client import TrendsClient
 
-from .usage.client import UsageClient
-
-from .account_activity.client import AccountActivityClient
+from .direct_messages.client import DirectMessagesClient
 
 
 class Client:
@@ -60,7 +60,7 @@ class Client:
 
     def __init__(
         self,
-        base_url: str = "https://api.twitter.com",
+        base_url: str = "https://api.x.com",
         bearer_token: str = None,
         client_id: str = None,
         client_secret: str = None,
@@ -79,7 +79,7 @@ class Client:
             scope: Space-separated list of scopes for OAuth2 authorization.
         """
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "xdk-python/0.2.7-beta"})
+        self.session.headers.update({"User-Agent": "xdk-python/0.3.0"})
         self.base_url = base_url
         self.bearer_token = bearer_token
         # Set up OAuth2 PKCE authentication if credentials are provided
@@ -94,24 +94,24 @@ class Client:
                 scope=scope,
             )
         # Initialize clients for each tag
+        self.webhooks = WebhooksClient(self)
+        self.communities = CommunitiesClient(self)
+        self.general = GeneralClient(self)
+        self.compliance = ComplianceClient(self)
+        self.news = NewsClient(self)
+        self.activity = ActivityClient(self)
+        self.connections = ConnectionsClient(self)
+        self.usage = UsageClient(self)
+        self.community_notes = CommunityNotesClient(self)
+        self.posts = PostsClient(self)
         self.lists = ListsClient(self)
+        self.account_activity = AccountActivityClient(self)
         self.users = UsersClient(self)
         self.spaces = SpacesClient(self)
-        self.trends = TrendsClient(self)
-        self.compliance = ComplianceClient(self)
-        self.webhooks = WebhooksClient(self)
-        self.general = GeneralClient(self)
-        self.connections = ConnectionsClient(self)
-        self.direct_messages = DirectMessagesClient(self)
-        self.community_notes = CommunityNotesClient(self)
-        self.news = NewsClient(self)
-        self.communities = CommunitiesClient(self)
-        self.activity = ActivityClient(self)
-        self.posts = PostsClient(self)
-        self.stream = StreamClient(self)
         self.media = MediaClient(self)
-        self.usage = UsageClient(self)
-        self.account_activity = AccountActivityClient(self)
+        self.stream = StreamClient(self)
+        self.trends = TrendsClient(self)
+        self.direct_messages = DirectMessagesClient(self)
 
     @property
 
