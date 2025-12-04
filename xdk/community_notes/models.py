@@ -16,6 +16,36 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
+# Models for evaluate
+
+
+class EvaluateRequest(BaseModel):
+    """Request model for evaluate"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class EvaluateResponse(BaseModel):
+    """Response model for evaluate"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for create
+
+
+class CreateRequest(BaseModel):
+    """Request model for create"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CreateResponse(BaseModel):
+    """Response model for create"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for search_written
 
 
@@ -34,40 +64,10 @@ class SearchEligiblePostsResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for evaluate
-
-
-class EvaluateRequest(BaseModel):
-    """Request model for evaluate"""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
-class EvaluateResponse(BaseModel):
-    """Response model for evaluate"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for delete
 
 
 class DeleteResponse(BaseModel):
     """Response model for delete"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for create
-
-
-class CreateRequest(BaseModel):
-    """Request model for create"""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
-class CreateResponse(BaseModel):
-    """Response model for create"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

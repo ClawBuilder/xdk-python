@@ -21,11 +21,11 @@ import time
 if TYPE_CHECKING:
     from ..client import Client
 from .models import (
-    GetByCreatorIdsResponse,
     GetBuyersResponse,
     GetByIdsResponse,
     SearchResponse,
     GetPostsResponse,
+    GetByCreatorIdsResponse,
     GetByIdResponse,
 )
 
@@ -36,68 +36,6 @@ class SpacesClient:
 
     def __init__(self, client: Client):
         self.client = client
-
-
-    def get_by_creator_ids(
-        self,
-        user_ids: List,
-        space_fields: List = None,
-        expansions: List = None,
-        user_fields: List = None,
-        topic_fields: List = None,
-    ) -> GetByCreatorIdsResponse:
-        """
-        Get Spaces by creator IDs
-        Retrieves details of Spaces created by specified User IDs.
-        Args:
-            user_ids: The IDs of Users to search through.
-            space_fields: A comma separated list of Space fields to display.
-            expansions: A comma separated list of fields to expand.
-            user_fields: A comma separated list of User fields to display.
-            topic_fields: A comma separated list of Topic fields to display.
-            Returns:
-            GetByCreatorIdsResponse: Response data
-        """
-        url = self.client.base_url + "/2/spaces/by/creator_ids"
-        if self.client.bearer_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.bearer_token}"
-            )
-        elif self.client.access_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        params = {}
-        if user_ids is not None:
-            params["user_ids"] = ",".join(str(item) for item in user_ids)
-        if space_fields is not None:
-            params["space.fields"] = ",".join(str(item) for item in space_fields)
-        if expansions is not None:
-            params["expansions"] = ",".join(str(item) for item in expansions)
-        if user_fields is not None:
-            params["user.fields"] = ",".join(str(item) for item in user_fields)
-        if topic_fields is not None:
-            params["topic.fields"] = ",".join(str(item) for item in topic_fields)
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        response = self.client.session.get(
-            url,
-            params=params,
-            headers=headers,
-        )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return GetByCreatorIdsResponse.model_validate(response_data)
 
 
     def get_buyers(
@@ -367,6 +305,68 @@ class SpacesClient:
         response_data = response.json()
         # Convert to Pydantic model if applicable
         return GetPostsResponse.model_validate(response_data)
+
+
+    def get_by_creator_ids(
+        self,
+        user_ids: List,
+        space_fields: List = None,
+        expansions: List = None,
+        user_fields: List = None,
+        topic_fields: List = None,
+    ) -> GetByCreatorIdsResponse:
+        """
+        Get Spaces by creator IDs
+        Retrieves details of Spaces created by specified User IDs.
+        Args:
+            user_ids: The IDs of Users to search through.
+            space_fields: A comma separated list of Space fields to display.
+            expansions: A comma separated list of fields to expand.
+            user_fields: A comma separated list of User fields to display.
+            topic_fields: A comma separated list of Topic fields to display.
+            Returns:
+            GetByCreatorIdsResponse: Response data
+        """
+        url = self.client.base_url + "/2/spaces/by/creator_ids"
+        if self.client.bearer_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.bearer_token}"
+            )
+        elif self.client.access_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        if user_ids is not None:
+            params["user_ids"] = ",".join(str(item) for item in user_ids)
+        if space_fields is not None:
+            params["space.fields"] = ",".join(str(item) for item in space_fields)
+        if expansions is not None:
+            params["expansions"] = ",".join(str(item) for item in expansions)
+        if user_fields is not None:
+            params["user.fields"] = ",".join(str(item) for item in user_fields)
+        if topic_fields is not None:
+            params["topic.fields"] = ",".join(str(item) for item in topic_fields)
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        response = self.client.session.get(
+            url,
+            params=params,
+            headers=headers,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return GetByCreatorIdsResponse.model_validate(response_data)
 
 
     def get_by_id(

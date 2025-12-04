@@ -16,30 +16,6 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get
-
-
-class GetResponse(BaseModel):
-    """Response model for get"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for create
-
-
-class CreateRequest(BaseModel):
-    """Request model for create"""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
-class CreateResponse(BaseModel):
-    """Response model for create"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for validate
 
 
@@ -67,6 +43,24 @@ class GetStreamLinksResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
+# Models for create_stream_link
+
+
+class CreateStreamLinkResponse(BaseModel):
+    """Response model for create_stream_link"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for delete_stream_link
+
+
+class DeleteStreamLinkResponse(BaseModel):
+    """Response model for delete_stream_link"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for create_webhook_replay_job
 
 
@@ -82,19 +76,25 @@ class CreateWebhookReplayJobResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for create_stream_link
+# Models for get
 
 
-class CreateStreamLinkResponse(BaseModel):
-    """Response model for create_stream_link"""
+class GetResponse(BaseModel):
+    """Response model for get"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for delete_stream_link
+# Models for create
 
 
-class DeleteStreamLinkResponse(BaseModel):
-    """Response model for delete_stream_link"""
+class CreateRequest(BaseModel):
+    """Request model for create"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CreateResponse(BaseModel):
+    """Response model for create"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

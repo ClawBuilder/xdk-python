@@ -16,11 +16,11 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get_followers
+# Models for get_posts
 
 
-class GetFollowersResponse(BaseModel):
-    """Response model for get_followers"""
+class GetPostsResponse(BaseModel):
+    """Response model for get_posts"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -36,48 +36,6 @@ class CreateRequest(BaseModel):
 
 class CreateResponse(BaseModel):
     """Response model for create"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_posts
-
-
-class GetPostsResponse(BaseModel):
-    """Response model for get_posts"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_by_id
-
-
-class GetByIdResponse(BaseModel):
-    """Response model for get_by_id"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for update
-
-
-class UpdateRequest(BaseModel):
-    """Request model for update"""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
-class UpdateResponse(BaseModel):
-    """Response model for update"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for delete
-
-
-class DeleteResponse(BaseModel):
-    """Response model for delete"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -111,5 +69,47 @@ class AddMemberRequest(BaseModel):
 
 class AddMemberResponse(BaseModel):
     """Response model for add_member"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_followers
+
+
+class GetFollowersResponse(BaseModel):
+    """Response model for get_followers"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_by_id
+
+
+class GetByIdResponse(BaseModel):
+    """Response model for get_by_id"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for update
+
+
+class UpdateRequest(BaseModel):
+    """Request model for update"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class UpdateResponse(BaseModel):
+    """Response model for update"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for delete
+
+
+class DeleteResponse(BaseModel):
+    """Response model for delete"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
