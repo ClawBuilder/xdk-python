@@ -16,33 +16,6 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get_stream_links
-
-
-class GetStreamLinksResponse(BaseModel):
-    """Response model for get_stream_links"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for create_stream_link
-
-
-class CreateStreamLinkResponse(BaseModel):
-    """Response model for create_stream_link"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for delete_stream_link
-
-
-class DeleteStreamLinkResponse(BaseModel):
-    """Response model for delete_stream_link"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for get
 
 
@@ -67,6 +40,33 @@ class CreateResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
+# Models for validate
+
+
+class ValidateResponse(BaseModel):
+    """Response model for validate"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for delete
+
+
+class DeleteResponse(BaseModel):
+    """Response model for delete"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_stream_links
+
+
+class GetStreamLinksResponse(BaseModel):
+    """Response model for get_stream_links"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for create_webhook_replay_job
 
 
@@ -82,19 +82,19 @@ class CreateWebhookReplayJobResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for validate
+# Models for create_stream_link
 
 
-class ValidateResponse(BaseModel):
-    """Response model for validate"""
+class CreateStreamLinkResponse(BaseModel):
+    """Response model for create_stream_link"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for delete
+# Models for delete_stream_link
 
 
-class DeleteResponse(BaseModel):
-    """Response model for delete"""
+class DeleteStreamLinkResponse(BaseModel):
+    """Response model for delete_stream_link"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

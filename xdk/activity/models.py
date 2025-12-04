@@ -40,6 +40,15 @@ class CreateSubscriptionResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
+# Models for stream
+
+
+class StreamResponse(BaseModel):
+    """Response model for stream"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for update_subscription
 
 
@@ -60,14 +69,5 @@ class UpdateSubscriptionResponse(BaseModel):
 
 class DeleteSubscriptionResponse(BaseModel):
     """Response model for delete_subscription"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for stream
-
-
-class StreamResponse(BaseModel):
-    """Response model for stream"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

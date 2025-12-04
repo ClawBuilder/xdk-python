@@ -17,23 +17,19 @@ from typing import Dict, List, Optional, Union, Any, Callable
 from .oauth2_auth import OAuth2PKCEAuth
 from .paginator import Cursor, cursor, PaginationError
 
-from .webhooks.client import WebhooksClient
+from .activity.client import ActivityClient
 
-from .communities.client import CommunitiesClient
+from .spaces.client import SpacesClient
 
-from .general.client import GeneralClient
+from .media.client import MediaClient
 
 from .compliance.client import ComplianceClient
 
-from .news.client import NewsClient
-
-from .activity.client import ActivityClient
-
-from .connections.client import ConnectionsClient
-
-from .usage.client import UsageClient
+from .direct_messages.client import DirectMessagesClient
 
 from .community_notes.client import CommunityNotesClient
+
+from .connections.client import ConnectionsClient
 
 from .posts.client import PostsClient
 
@@ -41,17 +37,21 @@ from .lists.client import ListsClient
 
 from .account_activity.client import AccountActivityClient
 
-from .users.client import UsersClient
+from .trends.client import TrendsClient
 
-from .spaces.client import SpacesClient
+from .news.client import NewsClient
 
-from .media.client import MediaClient
+from .general.client import GeneralClient
+
+from .usage.client import UsageClient
 
 from .stream.client import StreamClient
 
-from .trends.client import TrendsClient
+from .users.client import UsersClient
 
-from .direct_messages.client import DirectMessagesClient
+from .webhooks.client import WebhooksClient
+
+from .communities.client import CommunitiesClient
 
 
 class Client:
@@ -66,20 +66,22 @@ class Client:
         client_secret: str = None,
         redirect_uri: str = None,
         token: Dict[str, Any] = None,
-        scope: str = None,
+        scope: Union[str, List[str]] = None,
+        authorization_base_url: str = "https://x.com/i",
     ):
         """Initialize the X API client.
         Args:
-            base_url: The base URL for the X API.
+            base_url: The base URL for the X API (defaults to https://api.x.com).
             bearer_token: The bearer token for the X API.
             client_id: The client ID for the X API.
             client_secret: The client secret for the X API.
             redirect_uri: The redirect URI for OAuth2 authorization.
             token: An existing OAuth2 token dictionary (if available).
-            scope: Space-separated list of scopes for OAuth2 authorization.
+            scope: Space-separated string or list of strings for OAuth2 authorization scopes.
+            authorization_base_url: The base URL for OAuth2 authorization (defaults to https://x.com/i).
         """
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "xdk-python/0.3.0"})
+        self.session.headers.update({"User-Agent": "xdk-python/0.4.0"})
         self.base_url = base_url
         self.bearer_token = bearer_token
         # Set up OAuth2 PKCE authentication if credentials are provided
@@ -87,6 +89,7 @@ class Client:
         if client_id or token:
             self.oauth2_auth = OAuth2PKCEAuth(
                 base_url=base_url,
+                authorization_base_url=authorization_base_url,
                 client_id=client_id,
                 client_secret=client_secret,
                 redirect_uri=redirect_uri,
@@ -94,24 +97,24 @@ class Client:
                 scope=scope,
             )
         # Initialize clients for each tag
-        self.webhooks = WebhooksClient(self)
-        self.communities = CommunitiesClient(self)
-        self.general = GeneralClient(self)
-        self.compliance = ComplianceClient(self)
-        self.news = NewsClient(self)
         self.activity = ActivityClient(self)
-        self.connections = ConnectionsClient(self)
-        self.usage = UsageClient(self)
+        self.spaces = SpacesClient(self)
+        self.media = MediaClient(self)
+        self.compliance = ComplianceClient(self)
+        self.direct_messages = DirectMessagesClient(self)
         self.community_notes = CommunityNotesClient(self)
+        self.connections = ConnectionsClient(self)
         self.posts = PostsClient(self)
         self.lists = ListsClient(self)
         self.account_activity = AccountActivityClient(self)
-        self.users = UsersClient(self)
-        self.spaces = SpacesClient(self)
-        self.media = MediaClient(self)
-        self.stream = StreamClient(self)
         self.trends = TrendsClient(self)
-        self.direct_messages = DirectMessagesClient(self)
+        self.news = NewsClient(self)
+        self.general = GeneralClient(self)
+        self.usage = UsageClient(self)
+        self.stream = StreamClient(self)
+        self.users = UsersClient(self)
+        self.webhooks = WebhooksClient(self)
+        self.communities = CommunitiesClient(self)
 
     @property
 

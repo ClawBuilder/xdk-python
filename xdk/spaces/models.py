@@ -25,20 +25,11 @@ class GetByCreatorIdsResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for search
+# Models for get_buyers
 
 
-class SearchResponse(BaseModel):
-    """Response model for search"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_by_id
-
-
-class GetByIdResponse(BaseModel):
-    """Response model for get_by_id"""
+class GetBuyersResponse(BaseModel):
+    """Response model for get_buyers"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -52,11 +43,11 @@ class GetByIdsResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for get_buyers
+# Models for search
 
 
-class GetBuyersResponse(BaseModel):
-    """Response model for get_buyers"""
+class SearchResponse(BaseModel):
+    """Response model for search"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -66,5 +57,14 @@ class GetBuyersResponse(BaseModel):
 
 class GetPostsResponse(BaseModel):
     """Response model for get_posts"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_by_id
+
+
+class GetByIdResponse(BaseModel):
+    """Response model for get_by_id"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

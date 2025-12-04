@@ -21,18 +21,18 @@ import time
 if TYPE_CHECKING:
     from ..client import Client
 from .models import (
-    RemoveMemberByUserIdResponse,
     GetFollowersResponse,
-    GetMembersResponse,
-    AddMemberRequest,
-    AddMemberResponse,
+    CreateRequest,
+    CreateResponse,
     GetPostsResponse,
     GetByIdResponse,
     UpdateRequest,
     UpdateResponse,
     DeleteResponse,
-    CreateRequest,
-    CreateResponse,
+    RemoveMemberByUserIdResponse,
+    GetMembersResponse,
+    AddMemberRequest,
+    AddMemberResponse,
 )
 
 
@@ -42,51 +42,6 @@ class ListsClient:
 
     def __init__(self, client: Client):
         self.client = client
-
-
-    def remove_member_by_user_id(
-        self, id: Any, user_id: Any
-    ) -> RemoveMemberByUserIdResponse:
-        """
-        Remove List member
-        Removes a User from a specific List by its ID and the User’s ID.
-        Args:
-            id: The ID of the List to remove a member.
-            user_id: The ID of User that will be removed from the List.
-            Returns:
-            RemoveMemberByUserIdResponse: Response data
-        """
-        url = self.client.base_url + "/2/lists/{id}/members/{user_id}"
-        url = url.replace("{id}", str(id))
-        url = url.replace("{user_id}", str(user_id))
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        params = {}
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        if self.client.oauth2_session:
-            response = self.client.oauth2_session.delete(
-                url,
-                params=params,
-                headers=headers,
-            )
-        else:
-            response = self.client.session.delete(
-                url,
-                params=params,
-                headers=headers,
-            )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return RemoveMemberByUserIdResponse.model_validate(response_data)
 
 
     def get_followers(
@@ -154,85 +109,15 @@ class ListsClient:
         return GetFollowersResponse.model_validate(response_data)
 
 
-    def get_members(
-        self,
-        id: Any,
-        max_results: int = None,
-        pagination_token: Any = None,
-        user_fields: List = None,
-        expansions: List = None,
-        tweet_fields: List = None,
-    ) -> GetMembersResponse:
+    def create(self, body: Optional[CreateRequest] = None) -> CreateResponse:
         """
-        Get List members
-        Retrieves a list of Users who are members of a specific List by its ID.
-        Args:
-            id: The ID of the List.
-            max_results: The maximum number of results.
-            pagination_token: This parameter is used to get a specified 'page' of results.
-            user_fields: A comma separated list of User fields to display.
-            expansions: A comma separated list of fields to expand.
-            tweet_fields: A comma separated list of Tweet fields to display.
-            Returns:
-            GetMembersResponse: Response data
-        """
-        url = self.client.base_url + "/2/lists/{id}/members"
-        url = url.replace("{id}", str(id))
-        if self.client.bearer_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.bearer_token}"
-            )
-        elif self.client.access_token:
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-        # Ensure we have a valid access token
-        if self.client.oauth2_auth and self.client.token:
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        params = {}
-        if max_results is not None:
-            params["max_results"] = max_results
-        if pagination_token is not None:
-            params["pagination_token"] = pagination_token
-        if user_fields is not None:
-            params["user.fields"] = ",".join(str(item) for item in user_fields)
-        if expansions is not None:
-            params["expansions"] = ",".join(str(item) for item in expansions)
-        if tweet_fields is not None:
-            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Make the request
-        response = self.client.session.get(
-            url,
-            params=params,
-            headers=headers,
-        )
-        # Check for errors
-        response.raise_for_status()
-        # Parse the response data
-        response_data = response.json()
-        # Convert to Pydantic model if applicable
-        return GetMembersResponse.model_validate(response_data)
-
-
-    def add_member(
-        self, id: Any, body: Optional[AddMemberRequest] = None
-    ) -> AddMemberResponse:
-        """
-        Add List member
-        Adds a User to a specific List by its ID.
-        Args:
-            id: The ID of the List for which to add a member.
-            body: Request body
+        Create List
+        Creates a new List for the authenticated user.
+        body: Request body
         Returns:
-            AddMemberResponse: Response data
+            CreateResponse: Response data
         """
-        url = self.client.base_url + "/2/lists/{id}/members"
-        url = url.replace("{id}", str(id))
+        url = self.client.base_url + "/2/lists"
         # Ensure we have a valid access token
         if self.client.oauth2_auth and self.client.token:
             # Check if token needs refresh
@@ -269,7 +154,7 @@ class ListsClient:
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return AddMemberResponse.model_validate(response_data)
+        return CreateResponse.model_validate(response_data)
 
 
     def get_posts(
@@ -498,15 +383,130 @@ class ListsClient:
         return DeleteResponse.model_validate(response_data)
 
 
-    def create(self, body: Optional[CreateRequest] = None) -> CreateResponse:
+    def remove_member_by_user_id(
+        self, id: Any, user_id: Any
+    ) -> RemoveMemberByUserIdResponse:
         """
-        Create List
-        Creates a new List for the authenticated user.
-        body: Request body
+        Remove List member
+        Removes a User from a specific List by its ID and the User’s ID.
+        Args:
+            id: The ID of the List to remove a member.
+            user_id: The ID of User that will be removed from the List.
+            Returns:
+            RemoveMemberByUserIdResponse: Response data
+        """
+        url = self.client.base_url + "/2/lists/{id}/members/{user_id}"
+        url = url.replace("{id}", str(id))
+        url = url.replace("{user_id}", str(user_id))
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        if self.client.oauth2_session:
+            response = self.client.oauth2_session.delete(
+                url,
+                params=params,
+                headers=headers,
+            )
+        else:
+            response = self.client.session.delete(
+                url,
+                params=params,
+                headers=headers,
+            )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return RemoveMemberByUserIdResponse.model_validate(response_data)
+
+
+    def get_members(
+        self,
+        id: Any,
+        max_results: int = None,
+        pagination_token: Any = None,
+        user_fields: List = None,
+        expansions: List = None,
+        tweet_fields: List = None,
+    ) -> GetMembersResponse:
+        """
+        Get List members
+        Retrieves a list of Users who are members of a specific List by its ID.
+        Args:
+            id: The ID of the List.
+            max_results: The maximum number of results.
+            pagination_token: This parameter is used to get a specified 'page' of results.
+            user_fields: A comma separated list of User fields to display.
+            expansions: A comma separated list of fields to expand.
+            tweet_fields: A comma separated list of Tweet fields to display.
+            Returns:
+            GetMembersResponse: Response data
+        """
+        url = self.client.base_url + "/2/lists/{id}/members"
+        url = url.replace("{id}", str(id))
+        if self.client.bearer_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.bearer_token}"
+            )
+        elif self.client.access_token:
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+        # Ensure we have a valid access token
+        if self.client.oauth2_auth and self.client.token:
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        if max_results is not None:
+            params["max_results"] = max_results
+        if pagination_token is not None:
+            params["pagination_token"] = pagination_token
+        if user_fields is not None:
+            params["user.fields"] = ",".join(str(item) for item in user_fields)
+        if expansions is not None:
+            params["expansions"] = ",".join(str(item) for item in expansions)
+        if tweet_fields is not None:
+            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        response = self.client.session.get(
+            url,
+            params=params,
+            headers=headers,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return GetMembersResponse.model_validate(response_data)
+
+
+    def add_member(
+        self, id: Any, body: Optional[AddMemberRequest] = None
+    ) -> AddMemberResponse:
+        """
+        Add List member
+        Adds a User to a specific List by its ID.
+        Args:
+            id: The ID of the List for which to add a member.
+            body: Request body
         Returns:
-            CreateResponse: Response data
+            AddMemberResponse: Response data
         """
-        url = self.client.base_url + "/2/lists"
+        url = self.client.base_url + "/2/lists/{id}/members"
+        url = url.replace("{id}", str(id))
         # Ensure we have a valid access token
         if self.client.oauth2_auth and self.client.token:
             # Check if token needs refresh
@@ -543,4 +543,4 @@ class ListsClient:
         # Parse the response data
         response_data = response.json()
         # Convert to Pydantic model if applicable
-        return CreateResponse.model_validate(response_data)
+        return AddMemberResponse.model_validate(response_data)
