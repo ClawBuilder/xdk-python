@@ -17,41 +17,41 @@ from typing import Dict, List, Optional, Union, Any, Callable
 from .oauth2_auth import OAuth2PKCEAuth
 from .paginator import Cursor, cursor, PaginationError
 
-from .compliance.client import ComplianceClient
-
-from .news.client import NewsClient
-
-from .webhooks.client import WebhooksClient
-
-from .activity.client import ActivityClient
-
-from .users.client import UsersClient
-
-from .spaces.client import SpacesClient
-
-from .community_notes.client import CommunityNotesClient
-
-from .direct_messages.client import DirectMessagesClient
-
 from .usage.client import UsageClient
-
-from .posts.client import PostsClient
-
-from .general.client import GeneralClient
 
 from .communities.client import CommunitiesClient
 
-from .trends.client import TrendsClient
+from .users.client import UsersClient
+
+from .webhooks.client import WebhooksClient
+
+from .general.client import GeneralClient
 
 from .account_activity.client import AccountActivityClient
 
-from .stream.client import StreamClient
+from .trends.client import TrendsClient
+
+from .posts.client import PostsClient
+
+from .compliance.client import ComplianceClient
+
+from .community_notes.client import CommunityNotesClient
 
 from .connections.client import ConnectionsClient
 
-from .lists.client import ListsClient
-
 from .media.client import MediaClient
+
+from .spaces.client import SpacesClient
+
+from .activity.client import ActivityClient
+
+from .stream.client import StreamClient
+
+from .news.client import NewsClient
+
+from .direct_messages.client import DirectMessagesClient
+
+from .lists.client import ListsClient
 
 
 class Client:
@@ -83,7 +83,7 @@ class Client:
             authorization_base_url: The base URL for OAuth2 authorization (defaults to https://x.com/i).
         """
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "xdk-python/0.4.4"})
+        self.session.headers.update({"User-Agent": "xdk-python/0.4.5"})
         self.base_url = base_url
         self.bearer_token = bearer_token
         # Extract access_token from token dict if provided, otherwise use direct access_token parameter
@@ -113,24 +113,24 @@ class Client:
             ):
                 self._access_token = self.oauth2_auth.token["access_token"]
         # Initialize clients for each tag
-        self.compliance = ComplianceClient(self)
-        self.news = NewsClient(self)
-        self.webhooks = WebhooksClient(self)
-        self.activity = ActivityClient(self)
-        self.users = UsersClient(self)
-        self.spaces = SpacesClient(self)
-        self.community_notes = CommunityNotesClient(self)
-        self.direct_messages = DirectMessagesClient(self)
         self.usage = UsageClient(self)
-        self.posts = PostsClient(self)
-        self.general = GeneralClient(self)
         self.communities = CommunitiesClient(self)
-        self.trends = TrendsClient(self)
+        self.users = UsersClient(self)
+        self.webhooks = WebhooksClient(self)
+        self.general = GeneralClient(self)
         self.account_activity = AccountActivityClient(self)
-        self.stream = StreamClient(self)
+        self.trends = TrendsClient(self)
+        self.posts = PostsClient(self)
+        self.compliance = ComplianceClient(self)
+        self.community_notes = CommunityNotesClient(self)
         self.connections = ConnectionsClient(self)
-        self.lists = ListsClient(self)
         self.media = MediaClient(self)
+        self.spaces = SpacesClient(self)
+        self.activity = ActivityClient(self)
+        self.stream = StreamClient(self)
+        self.news = NewsClient(self)
+        self.direct_messages = DirectMessagesClient(self)
+        self.lists = ListsClient(self)
 
     @property
 

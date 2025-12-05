@@ -21,17 +21,17 @@ import time
 if TYPE_CHECKING:
     from ..client import Client
 from .models import (
+    GetEventsByParticipantIdResponse,
     CreateConversationRequest,
     CreateConversationResponse,
+    CreateByConversationIdRequest,
+    CreateByConversationIdResponse,
     GetEventsByIdResponse,
     DeleteEventsResponse,
+    GetEventsByConversationIdResponse,
     GetEventsResponse,
     CreateByParticipantIdRequest,
     CreateByParticipantIdResponse,
-    GetEventsByParticipantIdResponse,
-    CreateByConversationIdRequest,
-    CreateByConversationIdResponse,
-    GetEventsByConversationIdResponse,
 )
 
 
@@ -43,17 +43,41 @@ class DirectMessagesClient:
         self.client = client
 
 
-    def create_conversation(
-        self, body: Optional[CreateConversationRequest] = None
-    ) -> Dict[str, Any]:
+    def get_events_by_participant_id(
+        self,
+        participant_id: Any,
+        max_results: int = None,
+        pagination_token: Any = None,
+        event_types: List = None,
+        dm_event_fields: List = None,
+        expansions: List = None,
+        media_fields: List = None,
+        user_fields: List = None,
+        tweet_fields: List = None,
+    ) -> Iterator[GetEventsByParticipantIdResponse]:
         """
-        Create DM conversation
-        Initiates a new direct message conversation with specified participants.
-        body: Request body
-        Returns:
-            CreateConversationResponse: Response data
+        Get DM events for a DM conversation
+        Retrieves direct message events for a specific conversation.
+        Args:
+            participant_id: The ID of the participant user for the One to One DM conversation.
+            max_results: The maximum number of results.
+            pagination_token: This parameter is used to get a specified 'page' of results.
+            event_types: The set of event_types to include in the results.
+            dm_event_fields: A comma separated list of DmEvent fields to display.
+            expansions: A comma separated list of fields to expand.
+            media_fields: A comma separated list of Media fields to display.
+            user_fields: A comma separated list of User fields to display.
+            tweet_fields: A comma separated list of Tweet fields to display.
+            Yields:
+            GetEventsByParticipantIdResponse: One page of results at a time. Automatically handles pagination using next_token.
+        Note:
+            This method automatically paginates through all results. To get just the first page,
+            you can call it once and break, or use the pagination_token parameter to start at a specific page.
         """
-        url = self.client.base_url + "/2/dm_conversations"
+        url = (
+            self.client.base_url + "/2/dm_conversations/with/{participant_id}/dm_events"
+        )
+        url = url.replace("{participant_id}", str(participant_id))
         # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
         # Priority: access_token > oauth2_session (for token refresh support)
         if self.client.access_token:
@@ -76,40 +100,54 @@ class DirectMessagesClient:
             if self.client.is_token_expired():
                 self.client.refresh_token()
         headers = {}
-        headers["Content-Type"] = "application/json"
         # Prepare request data
         json_data = None
-        if body is not None:
-            json_data = (
-                body.model_dump(exclude_none=True)
-                if hasattr(body, "model_dump")
-                else body
-            )
         # Determine pagination parameter name
-        pagination_param_name = "pagination_token"  # Default fallback
+        pagination_param_name = "pagination_token"
         # Start with provided pagination_token, or None for first page
         # Check if pagination_token parameter exists in the method signature
-        current_pagination_token = None
+        current_pagination_token = pagination_token
         while True:
             # Build query parameters for this page
             page_params = {}
+            if max_results is not None:
+                page_params["max_results"] = max_results
+            if event_types is not None:
+                page_params["event_types"] = ",".join(str(item) for item in event_types)
+            if dm_event_fields is not None:
+                page_params["dm_event.fields"] = ",".join(
+                    str(item) for item in dm_event_fields
+                )
+            if expansions is not None:
+                page_params["expansions"] = ",".join(str(item) for item in expansions)
+            if media_fields is not None:
+                page_params["media.fields"] = ",".join(
+                    str(item) for item in media_fields
+                )
+            if user_fields is not None:
+                page_params["user.fields"] = ",".join(str(item) for item in user_fields)
+            if tweet_fields is not None:
+                page_params["tweet.fields"] = ",".join(
+                    str(item) for item in tweet_fields
+                )
             # Add pagination token for this page
             if current_pagination_token:
                 page_params[pagination_param_name] = current_pagination_token
             # Make the request
             # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-            response = self.client.session.post(
+            response = self.client.session.get(
                 url,
                 params=page_params,
                 headers=headers,
-                json=json_data,
             )
             # Check for errors
             response.raise_for_status()
             # Parse the response data
             response_data = response.json()
             # Convert to Pydantic model if applicable
-            page_response = CreateConversationResponse.model_validate(response_data)
+            page_response = GetEventsByParticipantIdResponse.model_validate(
+                response_data
+            )
             # Yield this page
             yield page_response
             # Extract next_token from response
@@ -149,6 +187,133 @@ class DirectMessagesClient:
 
             # Optional: Add rate limit backoff here if needed
             # time.sleep(0.1)  # Small delay to avoid rate limits
+
+
+    def create_conversation(
+        self, body: Optional[CreateConversationRequest] = None
+    ) -> Dict[str, Any]:
+        """
+        Create DM conversation
+        Initiates a new direct message conversation with specified participants.
+        body: Request body
+        Returns:
+            CreateConversationResponse: Response data
+        """
+        url = self.client.base_url + "/2/dm_conversations"
+        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
+        # Priority: access_token > oauth2_session (for token refresh support)
+        if self.client.access_token:
+            # Use access_token directly as bearer token (matches TypeScript)
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+            # If we have oauth2_auth, check if token needs refresh
+            if self.client.oauth2_auth and self.client.token:
+                if self.client.is_token_expired():
+                    self.client.refresh_token()
+                    # Update access_token after refresh
+                    if self.client.access_token:
+                        self.client.session.headers["Authorization"] = (
+                            f"Bearer {self.client.access_token}"
+                        )
+        elif self.client.oauth2_auth and self.client.token:
+            # Fallback: use oauth2_session if available (for backward compatibility)
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        headers = {}
+        headers["Content-Type"] = "application/json"
+        # Prepare request data
+        json_data = None
+        if body is not None:
+            json_data = (
+                body.model_dump(exclude_none=True)
+                if hasattr(body, "model_dump")
+                else body
+            )
+        # Make the request
+        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
+        # The setup_authentication macro already sets the Authorization header
+        # Use regular session since we're using bearer token authentication
+        response = self.client.session.post(
+            url,
+            params=params,
+            headers=headers,
+            json=json_data,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return CreateConversationResponse.model_validate(response_data)
+
+
+    def create_by_conversation_id(
+        self,
+        dm_conversation_id: str,
+        body: Optional[CreateByConversationIdRequest] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create DM message by conversation ID
+        Sends a new direct message to a specific conversation by its ID.
+        Args:
+            dm_conversation_id: The DM Conversation ID.
+            body: Request body
+        Returns:
+            CreateByConversationIdResponse: Response data
+        """
+        url = self.client.base_url + "/2/dm_conversations/{dm_conversation_id}/messages"
+        url = url.replace("{dm_conversation_id}", str(dm_conversation_id))
+        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
+        # Priority: access_token > oauth2_session (for token refresh support)
+        if self.client.access_token:
+            # Use access_token directly as bearer token (matches TypeScript)
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+            # If we have oauth2_auth, check if token needs refresh
+            if self.client.oauth2_auth and self.client.token:
+                if self.client.is_token_expired():
+                    self.client.refresh_token()
+                    # Update access_token after refresh
+                    if self.client.access_token:
+                        self.client.session.headers["Authorization"] = (
+                            f"Bearer {self.client.access_token}"
+                        )
+        elif self.client.oauth2_auth and self.client.token:
+            # Fallback: use oauth2_session if available (for backward compatibility)
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
+        params = {}
+        headers = {}
+        headers["Content-Type"] = "application/json"
+        # Prepare request data
+        json_data = None
+        if body is not None:
+            json_data = (
+                body.model_dump(exclude_none=True)
+                if hasattr(body, "model_dump")
+                else body
+            )
+        # Make the request
+        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
+        # The setup_authentication macro already sets the Authorization header
+        # Use regular session since we're using bearer token authentication
+        response = self.client.session.post(
+            url,
+            params=params,
+            headers=headers,
+            json=json_data,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return CreateByConversationIdResponse.model_validate(response_data)
 
 
     def get_events_by_id(
@@ -196,88 +361,35 @@ class DirectMessagesClient:
             # Check if token needs refresh
             if self.client.is_token_expired():
                 self.client.refresh_token()
+        params = {}
+        if dm_event_fields is not None:
+            params["dm_event.fields"] = ",".join(str(item) for item in dm_event_fields)
+        if expansions is not None:
+            params["expansions"] = ",".join(str(item) for item in expansions)
+        if media_fields is not None:
+            params["media.fields"] = ",".join(str(item) for item in media_fields)
+        if user_fields is not None:
+            params["user.fields"] = ",".join(str(item) for item in user_fields)
+        if tweet_fields is not None:
+            params["tweet.fields"] = ",".join(str(item) for item in tweet_fields)
         headers = {}
         # Prepare request data
         json_data = None
-        # Determine pagination parameter name
-        pagination_param_name = "pagination_token"  # Default fallback
-        # Start with provided pagination_token, or None for first page
-        # Check if pagination_token parameter exists in the method signature
-        current_pagination_token = None
-        while True:
-            # Build query parameters for this page
-            page_params = {}
-            if dm_event_fields is not None:
-                page_params["dm_event.fields"] = ",".join(
-                    str(item) for item in dm_event_fields
-                )
-            if expansions is not None:
-                page_params["expansions"] = ",".join(str(item) for item in expansions)
-            if media_fields is not None:
-                page_params["media.fields"] = ",".join(
-                    str(item) for item in media_fields
-                )
-            if user_fields is not None:
-                page_params["user.fields"] = ",".join(str(item) for item in user_fields)
-            if tweet_fields is not None:
-                page_params["tweet.fields"] = ",".join(
-                    str(item) for item in tweet_fields
-                )
-            # Add pagination token for this page
-            if current_pagination_token:
-                page_params[pagination_param_name] = current_pagination_token
-            # Make the request
-            # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-            response = self.client.session.get(
-                url,
-                params=page_params,
-                headers=headers,
-            )
-            # Check for errors
-            response.raise_for_status()
-            # Parse the response data
-            response_data = response.json()
-            # Convert to Pydantic model if applicable
-            page_response = GetEventsByIdResponse.model_validate(response_data)
-            # Yield this page
-            yield page_response
-            # Extract next_token from response
-            next_token = None
-            try:
-                # Try response.meta.next_token (most common pattern)
-                if hasattr(page_response, "meta") and page_response.meta is not None:
-                    meta = page_response.meta
-                    # If meta is a Pydantic model, try to dump it
-                    if hasattr(meta, "model_dump"):
-                        try:
-                            meta_dict = meta.model_dump()
-                            next_token = meta_dict.get("next_token")
-                        except (AttributeError, TypeError):
-                            pass
-                    # Otherwise try attribute access
-                    if not next_token and hasattr(meta, "next_token"):
-                        next_token = getattr(meta, "next_token", None)
-                    # If meta is a dict, access it directly
-                    if not next_token and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-            except (AttributeError, TypeError):
-                pass
-            # Try dict access if we have a dict
-            if not next_token and isinstance(response_data, dict):
-                try:
-                    meta = response_data.get("meta")
-                    if meta and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-                except (AttributeError, TypeError, KeyError):
-                    pass
-            # If no next_token, we're done
-            if not next_token:
-                break
-            # Update token for next iteration
-            current_pagination_token = next_token
-
-            # Optional: Add rate limit backoff here if needed
-            # time.sleep(0.1)  # Small delay to avoid rate limits
+        # Make the request
+        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
+        # The setup_authentication macro already sets the Authorization header
+        # Use regular session since we're using bearer token authentication
+        response = self.client.session.get(
+            url,
+            params=params,
+            headers=headers,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return GetEventsByIdResponse.model_validate(response_data)
 
 
     def delete_events(self, event_id: Any) -> DeleteEventsResponse:
@@ -312,23 +424,118 @@ class DirectMessagesClient:
             # Check if token needs refresh
             if self.client.is_token_expired():
                 self.client.refresh_token()
+        params = {}
+        headers = {}
+        # Prepare request data
+        json_data = None
+        # Make the request
+        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
+        # The setup_authentication macro already sets the Authorization header
+        # Use regular session since we're using bearer token authentication
+        response = self.client.session.delete(
+            url,
+            params=params,
+            headers=headers,
+        )
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return DeleteEventsResponse.model_validate(response_data)
+
+
+    def get_events_by_conversation_id(
+        self,
+        id: Any,
+        max_results: int = None,
+        pagination_token: Any = None,
+        event_types: List = None,
+        dm_event_fields: List = None,
+        expansions: List = None,
+        media_fields: List = None,
+        user_fields: List = None,
+        tweet_fields: List = None,
+    ) -> Iterator[GetEventsByConversationIdResponse]:
+        """
+        Get DM events for a DM conversation
+        Retrieves direct message events for a specific conversation.
+        Args:
+            id: The DM conversation ID.
+            max_results: The maximum number of results.
+            pagination_token: This parameter is used to get a specified 'page' of results.
+            event_types: The set of event_types to include in the results.
+            dm_event_fields: A comma separated list of DmEvent fields to display.
+            expansions: A comma separated list of fields to expand.
+            media_fields: A comma separated list of Media fields to display.
+            user_fields: A comma separated list of User fields to display.
+            tweet_fields: A comma separated list of Tweet fields to display.
+            Yields:
+            GetEventsByConversationIdResponse: One page of results at a time. Automatically handles pagination using next_token.
+        Note:
+            This method automatically paginates through all results. To get just the first page,
+            you can call it once and break, or use the pagination_token parameter to start at a specific page.
+        """
+        url = self.client.base_url + "/2/dm_conversations/{id}/dm_events"
+        url = url.replace("{id}", str(id))
+        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
+        # Priority: access_token > oauth2_session (for token refresh support)
+        if self.client.access_token:
+            # Use access_token directly as bearer token (matches TypeScript)
+            self.client.session.headers["Authorization"] = (
+                f"Bearer {self.client.access_token}"
+            )
+            # If we have oauth2_auth, check if token needs refresh
+            if self.client.oauth2_auth and self.client.token:
+                if self.client.is_token_expired():
+                    self.client.refresh_token()
+                    # Update access_token after refresh
+                    if self.client.access_token:
+                        self.client.session.headers["Authorization"] = (
+                            f"Bearer {self.client.access_token}"
+                        )
+        elif self.client.oauth2_auth and self.client.token:
+            # Fallback: use oauth2_session if available (for backward compatibility)
+            # Check if token needs refresh
+            if self.client.is_token_expired():
+                self.client.refresh_token()
         headers = {}
         # Prepare request data
         json_data = None
         # Determine pagination parameter name
-        pagination_param_name = "pagination_token"  # Default fallback
+        pagination_param_name = "pagination_token"
         # Start with provided pagination_token, or None for first page
         # Check if pagination_token parameter exists in the method signature
-        current_pagination_token = None
+        current_pagination_token = pagination_token
         while True:
             # Build query parameters for this page
             page_params = {}
+            if max_results is not None:
+                page_params["max_results"] = max_results
+            if event_types is not None:
+                page_params["event_types"] = ",".join(str(item) for item in event_types)
+            if dm_event_fields is not None:
+                page_params["dm_event.fields"] = ",".join(
+                    str(item) for item in dm_event_fields
+                )
+            if expansions is not None:
+                page_params["expansions"] = ",".join(str(item) for item in expansions)
+            if media_fields is not None:
+                page_params["media.fields"] = ",".join(
+                    str(item) for item in media_fields
+                )
+            if user_fields is not None:
+                page_params["user.fields"] = ",".join(str(item) for item in user_fields)
+            if tweet_fields is not None:
+                page_params["tweet.fields"] = ",".join(
+                    str(item) for item in tweet_fields
+                )
             # Add pagination token for this page
             if current_pagination_token:
                 page_params[pagination_param_name] = current_pagination_token
             # Make the request
             # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-            response = self.client.session.delete(
+            response = self.client.session.get(
                 url,
                 params=page_params,
                 headers=headers,
@@ -338,7 +545,9 @@ class DirectMessagesClient:
             # Parse the response data
             response_data = response.json()
             # Convert to Pydantic model if applicable
-            page_response = DeleteEventsResponse.model_validate(response_data)
+            page_response = GetEventsByConversationIdResponse.model_validate(
+                response_data
+            )
             # Yield this page
             yield page_response
             # Extract next_token from response
@@ -556,6 +765,7 @@ class DirectMessagesClient:
             # Check if token needs refresh
             if self.client.is_token_expired():
                 self.client.refresh_token()
+        params = {}
         headers = {}
         headers["Content-Type"] = "application/json"
         # Prepare request data
@@ -566,470 +776,19 @@ class DirectMessagesClient:
                 if hasattr(body, "model_dump")
                 else body
             )
-        # Determine pagination parameter name
-        pagination_param_name = "pagination_token"  # Default fallback
-        # Start with provided pagination_token, or None for first page
-        # Check if pagination_token parameter exists in the method signature
-        current_pagination_token = None
-        while True:
-            # Build query parameters for this page
-            page_params = {}
-            # Add pagination token for this page
-            if current_pagination_token:
-                page_params[pagination_param_name] = current_pagination_token
-            # Make the request
-            # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-            response = self.client.session.post(
-                url,
-                params=page_params,
-                headers=headers,
-                json=json_data,
-            )
-            # Check for errors
-            response.raise_for_status()
-            # Parse the response data
-            response_data = response.json()
-            # Convert to Pydantic model if applicable
-            page_response = CreateByParticipantIdResponse.model_validate(response_data)
-            # Yield this page
-            yield page_response
-            # Extract next_token from response
-            next_token = None
-            try:
-                # Try response.meta.next_token (most common pattern)
-                if hasattr(page_response, "meta") and page_response.meta is not None:
-                    meta = page_response.meta
-                    # If meta is a Pydantic model, try to dump it
-                    if hasattr(meta, "model_dump"):
-                        try:
-                            meta_dict = meta.model_dump()
-                            next_token = meta_dict.get("next_token")
-                        except (AttributeError, TypeError):
-                            pass
-                    # Otherwise try attribute access
-                    if not next_token and hasattr(meta, "next_token"):
-                        next_token = getattr(meta, "next_token", None)
-                    # If meta is a dict, access it directly
-                    if not next_token and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-            except (AttributeError, TypeError):
-                pass
-            # Try dict access if we have a dict
-            if not next_token and isinstance(response_data, dict):
-                try:
-                    meta = response_data.get("meta")
-                    if meta and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-                except (AttributeError, TypeError, KeyError):
-                    pass
-            # If no next_token, we're done
-            if not next_token:
-                break
-            # Update token for next iteration
-            current_pagination_token = next_token
-
-            # Optional: Add rate limit backoff here if needed
-            # time.sleep(0.1)  # Small delay to avoid rate limits
-
-
-    def get_events_by_participant_id(
-        self,
-        participant_id: Any,
-        max_results: int = None,
-        pagination_token: Any = None,
-        event_types: List = None,
-        dm_event_fields: List = None,
-        expansions: List = None,
-        media_fields: List = None,
-        user_fields: List = None,
-        tweet_fields: List = None,
-    ) -> Iterator[GetEventsByParticipantIdResponse]:
-        """
-        Get DM events for a DM conversation
-        Retrieves direct message events for a specific conversation.
-        Args:
-            participant_id: The ID of the participant user for the One to One DM conversation.
-            max_results: The maximum number of results.
-            pagination_token: This parameter is used to get a specified 'page' of results.
-            event_types: The set of event_types to include in the results.
-            dm_event_fields: A comma separated list of DmEvent fields to display.
-            expansions: A comma separated list of fields to expand.
-            media_fields: A comma separated list of Media fields to display.
-            user_fields: A comma separated list of User fields to display.
-            tweet_fields: A comma separated list of Tweet fields to display.
-            Yields:
-            GetEventsByParticipantIdResponse: One page of results at a time. Automatically handles pagination using next_token.
-        Note:
-            This method automatically paginates through all results. To get just the first page,
-            you can call it once and break, or use the pagination_token parameter to start at a specific page.
-        """
-        url = (
-            self.client.base_url + "/2/dm_conversations/with/{participant_id}/dm_events"
+        # Make the request
+        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
+        # The setup_authentication macro already sets the Authorization header
+        # Use regular session since we're using bearer token authentication
+        response = self.client.session.post(
+            url,
+            params=params,
+            headers=headers,
+            json=json_data,
         )
-        url = url.replace("{participant_id}", str(participant_id))
-        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-        # Priority: access_token > oauth2_session (for token refresh support)
-        if self.client.access_token:
-            # Use access_token directly as bearer token (matches TypeScript)
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-            # If we have oauth2_auth, check if token needs refresh
-            if self.client.oauth2_auth and self.client.token:
-                if self.client.is_token_expired():
-                    self.client.refresh_token()
-                    # Update access_token after refresh
-                    if self.client.access_token:
-                        self.client.session.headers["Authorization"] = (
-                            f"Bearer {self.client.access_token}"
-                        )
-        elif self.client.oauth2_auth and self.client.token:
-            # Fallback: use oauth2_session if available (for backward compatibility)
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Determine pagination parameter name
-        pagination_param_name = "pagination_token"
-        # Start with provided pagination_token, or None for first page
-        # Check if pagination_token parameter exists in the method signature
-        current_pagination_token = pagination_token
-        while True:
-            # Build query parameters for this page
-            page_params = {}
-            if max_results is not None:
-                page_params["max_results"] = max_results
-            if event_types is not None:
-                page_params["event_types"] = ",".join(str(item) for item in event_types)
-            if dm_event_fields is not None:
-                page_params["dm_event.fields"] = ",".join(
-                    str(item) for item in dm_event_fields
-                )
-            if expansions is not None:
-                page_params["expansions"] = ",".join(str(item) for item in expansions)
-            if media_fields is not None:
-                page_params["media.fields"] = ",".join(
-                    str(item) for item in media_fields
-                )
-            if user_fields is not None:
-                page_params["user.fields"] = ",".join(str(item) for item in user_fields)
-            if tweet_fields is not None:
-                page_params["tweet.fields"] = ",".join(
-                    str(item) for item in tweet_fields
-                )
-            # Add pagination token for this page
-            if current_pagination_token:
-                page_params[pagination_param_name] = current_pagination_token
-            # Make the request
-            # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-            response = self.client.session.get(
-                url,
-                params=page_params,
-                headers=headers,
-            )
-            # Check for errors
-            response.raise_for_status()
-            # Parse the response data
-            response_data = response.json()
-            # Convert to Pydantic model if applicable
-            page_response = GetEventsByParticipantIdResponse.model_validate(
-                response_data
-            )
-            # Yield this page
-            yield page_response
-            # Extract next_token from response
-            next_token = None
-            try:
-                # Try response.meta.next_token (most common pattern)
-                if hasattr(page_response, "meta") and page_response.meta is not None:
-                    meta = page_response.meta
-                    # If meta is a Pydantic model, try to dump it
-                    if hasattr(meta, "model_dump"):
-                        try:
-                            meta_dict = meta.model_dump()
-                            next_token = meta_dict.get("next_token")
-                        except (AttributeError, TypeError):
-                            pass
-                    # Otherwise try attribute access
-                    if not next_token and hasattr(meta, "next_token"):
-                        next_token = getattr(meta, "next_token", None)
-                    # If meta is a dict, access it directly
-                    if not next_token and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-            except (AttributeError, TypeError):
-                pass
-            # Try dict access if we have a dict
-            if not next_token and isinstance(response_data, dict):
-                try:
-                    meta = response_data.get("meta")
-                    if meta and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-                except (AttributeError, TypeError, KeyError):
-                    pass
-            # If no next_token, we're done
-            if not next_token:
-                break
-            # Update token for next iteration
-            current_pagination_token = next_token
-
-            # Optional: Add rate limit backoff here if needed
-            # time.sleep(0.1)  # Small delay to avoid rate limits
-
-
-    def create_by_conversation_id(
-        self,
-        dm_conversation_id: str,
-        body: Optional[CreateByConversationIdRequest] = None,
-    ) -> Dict[str, Any]:
-        """
-        Create DM message by conversation ID
-        Sends a new direct message to a specific conversation by its ID.
-        Args:
-            dm_conversation_id: The DM Conversation ID.
-            body: Request body
-        Returns:
-            CreateByConversationIdResponse: Response data
-        """
-        url = self.client.base_url + "/2/dm_conversations/{dm_conversation_id}/messages"
-        url = url.replace("{dm_conversation_id}", str(dm_conversation_id))
-        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-        # Priority: access_token > oauth2_session (for token refresh support)
-        if self.client.access_token:
-            # Use access_token directly as bearer token (matches TypeScript)
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-            # If we have oauth2_auth, check if token needs refresh
-            if self.client.oauth2_auth and self.client.token:
-                if self.client.is_token_expired():
-                    self.client.refresh_token()
-                    # Update access_token after refresh
-                    if self.client.access_token:
-                        self.client.session.headers["Authorization"] = (
-                            f"Bearer {self.client.access_token}"
-                        )
-        elif self.client.oauth2_auth and self.client.token:
-            # Fallback: use oauth2_session if available (for backward compatibility)
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        headers = {}
-        headers["Content-Type"] = "application/json"
-        # Prepare request data
-        json_data = None
-        if body is not None:
-            json_data = (
-                body.model_dump(exclude_none=True)
-                if hasattr(body, "model_dump")
-                else body
-            )
-        # Determine pagination parameter name
-        pagination_param_name = "pagination_token"  # Default fallback
-        # Start with provided pagination_token, or None for first page
-        # Check if pagination_token parameter exists in the method signature
-        current_pagination_token = None
-        while True:
-            # Build query parameters for this page
-            page_params = {}
-            # Add pagination token for this page
-            if current_pagination_token:
-                page_params[pagination_param_name] = current_pagination_token
-            # Make the request
-            # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-            response = self.client.session.post(
-                url,
-                params=page_params,
-                headers=headers,
-                json=json_data,
-            )
-            # Check for errors
-            response.raise_for_status()
-            # Parse the response data
-            response_data = response.json()
-            # Convert to Pydantic model if applicable
-            page_response = CreateByConversationIdResponse.model_validate(response_data)
-            # Yield this page
-            yield page_response
-            # Extract next_token from response
-            next_token = None
-            try:
-                # Try response.meta.next_token (most common pattern)
-                if hasattr(page_response, "meta") and page_response.meta is not None:
-                    meta = page_response.meta
-                    # If meta is a Pydantic model, try to dump it
-                    if hasattr(meta, "model_dump"):
-                        try:
-                            meta_dict = meta.model_dump()
-                            next_token = meta_dict.get("next_token")
-                        except (AttributeError, TypeError):
-                            pass
-                    # Otherwise try attribute access
-                    if not next_token and hasattr(meta, "next_token"):
-                        next_token = getattr(meta, "next_token", None)
-                    # If meta is a dict, access it directly
-                    if not next_token and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-            except (AttributeError, TypeError):
-                pass
-            # Try dict access if we have a dict
-            if not next_token and isinstance(response_data, dict):
-                try:
-                    meta = response_data.get("meta")
-                    if meta and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-                except (AttributeError, TypeError, KeyError):
-                    pass
-            # If no next_token, we're done
-            if not next_token:
-                break
-            # Update token for next iteration
-            current_pagination_token = next_token
-
-            # Optional: Add rate limit backoff here if needed
-            # time.sleep(0.1)  # Small delay to avoid rate limits
-
-
-    def get_events_by_conversation_id(
-        self,
-        id: Any,
-        max_results: int = None,
-        pagination_token: Any = None,
-        event_types: List = None,
-        dm_event_fields: List = None,
-        expansions: List = None,
-        media_fields: List = None,
-        user_fields: List = None,
-        tweet_fields: List = None,
-    ) -> Iterator[GetEventsByConversationIdResponse]:
-        """
-        Get DM events for a DM conversation
-        Retrieves direct message events for a specific conversation.
-        Args:
-            id: The DM conversation ID.
-            max_results: The maximum number of results.
-            pagination_token: This parameter is used to get a specified 'page' of results.
-            event_types: The set of event_types to include in the results.
-            dm_event_fields: A comma separated list of DmEvent fields to display.
-            expansions: A comma separated list of fields to expand.
-            media_fields: A comma separated list of Media fields to display.
-            user_fields: A comma separated list of User fields to display.
-            tweet_fields: A comma separated list of Tweet fields to display.
-            Yields:
-            GetEventsByConversationIdResponse: One page of results at a time. Automatically handles pagination using next_token.
-        Note:
-            This method automatically paginates through all results. To get just the first page,
-            you can call it once and break, or use the pagination_token parameter to start at a specific page.
-        """
-        url = self.client.base_url + "/2/dm_conversations/{id}/dm_events"
-        url = url.replace("{id}", str(id))
-        # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-        # Priority: access_token > oauth2_session (for token refresh support)
-        if self.client.access_token:
-            # Use access_token directly as bearer token (matches TypeScript)
-            self.client.session.headers["Authorization"] = (
-                f"Bearer {self.client.access_token}"
-            )
-            # If we have oauth2_auth, check if token needs refresh
-            if self.client.oauth2_auth and self.client.token:
-                if self.client.is_token_expired():
-                    self.client.refresh_token()
-                    # Update access_token after refresh
-                    if self.client.access_token:
-                        self.client.session.headers["Authorization"] = (
-                            f"Bearer {self.client.access_token}"
-                        )
-        elif self.client.oauth2_auth and self.client.token:
-            # Fallback: use oauth2_session if available (for backward compatibility)
-            # Check if token needs refresh
-            if self.client.is_token_expired():
-                self.client.refresh_token()
-        headers = {}
-        # Prepare request data
-        json_data = None
-        # Determine pagination parameter name
-        pagination_param_name = "pagination_token"
-        # Start with provided pagination_token, or None for first page
-        # Check if pagination_token parameter exists in the method signature
-        current_pagination_token = pagination_token
-        while True:
-            # Build query parameters for this page
-            page_params = {}
-            if max_results is not None:
-                page_params["max_results"] = max_results
-            if event_types is not None:
-                page_params["event_types"] = ",".join(str(item) for item in event_types)
-            if dm_event_fields is not None:
-                page_params["dm_event.fields"] = ",".join(
-                    str(item) for item in dm_event_fields
-                )
-            if expansions is not None:
-                page_params["expansions"] = ",".join(str(item) for item in expansions)
-            if media_fields is not None:
-                page_params["media.fields"] = ",".join(
-                    str(item) for item in media_fields
-                )
-            if user_fields is not None:
-                page_params["user.fields"] = ",".join(str(item) for item in user_fields)
-            if tweet_fields is not None:
-                page_params["tweet.fields"] = ",".join(
-                    str(item) for item in tweet_fields
-                )
-            # Add pagination token for this page
-            if current_pagination_token:
-                page_params[pagination_param_name] = current_pagination_token
-            # Make the request
-            # OAuth2UserToken: Use access_token as bearer token (matches TypeScript behavior)
-            response = self.client.session.get(
-                url,
-                params=page_params,
-                headers=headers,
-            )
-            # Check for errors
-            response.raise_for_status()
-            # Parse the response data
-            response_data = response.json()
-            # Convert to Pydantic model if applicable
-            page_response = GetEventsByConversationIdResponse.model_validate(
-                response_data
-            )
-            # Yield this page
-            yield page_response
-            # Extract next_token from response
-            next_token = None
-            try:
-                # Try response.meta.next_token (most common pattern)
-                if hasattr(page_response, "meta") and page_response.meta is not None:
-                    meta = page_response.meta
-                    # If meta is a Pydantic model, try to dump it
-                    if hasattr(meta, "model_dump"):
-                        try:
-                            meta_dict = meta.model_dump()
-                            next_token = meta_dict.get("next_token")
-                        except (AttributeError, TypeError):
-                            pass
-                    # Otherwise try attribute access
-                    if not next_token and hasattr(meta, "next_token"):
-                        next_token = getattr(meta, "next_token", None)
-                    # If meta is a dict, access it directly
-                    if not next_token and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-            except (AttributeError, TypeError):
-                pass
-            # Try dict access if we have a dict
-            if not next_token and isinstance(response_data, dict):
-                try:
-                    meta = response_data.get("meta")
-                    if meta and isinstance(meta, dict):
-                        next_token = meta.get("next_token")
-                except (AttributeError, TypeError, KeyError):
-                    pass
-            # If no next_token, we're done
-            if not next_token:
-                break
-            # Update token for next iteration
-            current_pagination_token = next_token
-
-            # Optional: Add rate limit backoff here if needed
-            # time.sleep(0.1)  # Small delay to avoid rate limits
+        # Check for errors
+        response.raise_for_status()
+        # Parse the response data
+        response_data = response.json()
+        # Convert to Pydantic model if applicable
+        return CreateByParticipantIdResponse.model_validate(response_data)

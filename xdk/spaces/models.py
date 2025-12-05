@@ -16,20 +16,11 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get_by_id
+# Models for search
 
 
-class GetByIdResponse(BaseModel):
-    """Response model for get_by_id"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for get_buyers
-
-
-class GetBuyersResponse(BaseModel):
-    """Response model for get_buyers"""
+class SearchResponse(BaseModel):
+    """Response model for search"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -43,6 +34,15 @@ class GetByIdsResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
+# Models for get_by_id
+
+
+class GetByIdResponse(BaseModel):
+    """Response model for get_by_id"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for get_posts
 
 
@@ -52,19 +52,19 @@ class GetPostsResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
+# Models for get_buyers
+
+
+class GetBuyersResponse(BaseModel):
+    """Response model for get_buyers"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for get_by_creator_ids
 
 
 class GetByCreatorIdsResponse(BaseModel):
     """Response model for get_by_creator_ids"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for search
-
-
-class SearchResponse(BaseModel):
-    """Response model for search"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
