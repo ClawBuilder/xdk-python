@@ -28,8 +28,8 @@ class TestSpacesContracts:
         self.spaces_client = getattr(self.client, "spaces")
 
 
-    def test_search_request_structure(self):
-        """Test search request structure."""
+    def test_get_buyers_request_structure(self):
+        """Test get_buyers request structure."""
         # Mock the session to capture request details
         with patch.object(self.client, "session") as mock_session:
             mock_response = Mock()
@@ -42,11 +42,11 @@ class TestSpacesContracts:
             # Prepare test parameters
             kwargs = {}
             # Add required parameters
-            kwargs["query"] = "test_query"
+            kwargs["id"] = "test_id"
             # Add request body if required
             # Call the method
             try:
-                method = getattr(self.spaces_client, "search")
+                method = getattr(self.spaces_client, "get_buyers")
                 # Check if this might be a streaming operation by inspecting return type
                 import types
                 import inspect
@@ -109,7 +109,7 @@ class TestSpacesContracts:
                 called_url = (
                     call_args[0][0] if call_args[0] else call_args[1].get("url", "")
                 )
-                expected_path = "/2/spaces/search"
+                expected_path = "/2/spaces/{id}/buyers"
                 assert expected_path.replace("{", "").replace(
                     "}", ""
                 ) in called_url or any(
@@ -125,12 +125,12 @@ class TestSpacesContracts:
                     # For regular operations, verify we got a result
                     assert result is not None, "Method should return a result"
             except Exception as e:
-                pytest.fail(f"Contract test failed for search: {e}")
+                pytest.fail(f"Contract test failed for get_buyers: {e}")
 
 
-    def test_search_required_parameters(self):
-        """Test that search handles parameters correctly."""
-        method = getattr(self.spaces_client, "search")
+    def test_get_buyers_required_parameters(self):
+        """Test that get_buyers handles parameters correctly."""
+        method = getattr(self.spaces_client, "get_buyers")
         # Test with missing required parameters - mock the request to avoid network calls
         with patch.object(self.client, "session") as mock_session:
             # Mock a 400 response (typical for missing required parameters)
@@ -150,8 +150,8 @@ class TestSpacesContracts:
                     next(result)
 
 
-    def test_search_response_structure(self):
-        """Test search response structure validation."""
+    def test_get_buyers_response_structure(self):
+        """Test get_buyers response structure validation."""
         with patch.object(self.client, "session") as mock_session:
             # Create mock response with expected structure
             mock_response_data = {
@@ -164,10 +164,10 @@ class TestSpacesContracts:
             mock_session.get.return_value = mock_response
             # Prepare minimal valid parameters
             kwargs = {}
-            kwargs["query"] = "test_value"
+            kwargs["id"] = "test_value"
             # Add request body if required
             # Call method and verify response structure
-            method = getattr(self.spaces_client, "search")
+            method = getattr(self.spaces_client, "get_buyers")
             result = method(**kwargs)
             # Verify response object has expected attributes
             # Optional field - just check it doesn't cause errors if accessed
@@ -330,8 +330,8 @@ class TestSpacesContracts:
                 )
 
 
-    def test_get_by_id_request_structure(self):
-        """Test get_by_id request structure."""
+    def test_get_by_creator_ids_request_structure(self):
+        """Test get_by_creator_ids request structure."""
         # Mock the session to capture request details
         with patch.object(self.client, "session") as mock_session:
             mock_response = Mock()
@@ -344,11 +344,11 @@ class TestSpacesContracts:
             # Prepare test parameters
             kwargs = {}
             # Add required parameters
-            kwargs["id"] = "test_id"
+            kwargs["user_ids"] = ["test_item"]
             # Add request body if required
             # Call the method
             try:
-                method = getattr(self.spaces_client, "get_by_id")
+                method = getattr(self.spaces_client, "get_by_creator_ids")
                 # Check if this might be a streaming operation by inspecting return type
                 import types
                 import inspect
@@ -411,7 +411,7 @@ class TestSpacesContracts:
                 called_url = (
                     call_args[0][0] if call_args[0] else call_args[1].get("url", "")
                 )
-                expected_path = "/2/spaces/{id}"
+                expected_path = "/2/spaces/by/creator_ids"
                 assert expected_path.replace("{", "").replace(
                     "}", ""
                 ) in called_url or any(
@@ -427,12 +427,12 @@ class TestSpacesContracts:
                     # For regular operations, verify we got a result
                     assert result is not None, "Method should return a result"
             except Exception as e:
-                pytest.fail(f"Contract test failed for get_by_id: {e}")
+                pytest.fail(f"Contract test failed for get_by_creator_ids: {e}")
 
 
-    def test_get_by_id_required_parameters(self):
-        """Test that get_by_id handles parameters correctly."""
-        method = getattr(self.spaces_client, "get_by_id")
+    def test_get_by_creator_ids_required_parameters(self):
+        """Test that get_by_creator_ids handles parameters correctly."""
+        method = getattr(self.spaces_client, "get_by_creator_ids")
         # Test with missing required parameters - mock the request to avoid network calls
         with patch.object(self.client, "session") as mock_session:
             # Mock a 400 response (typical for missing required parameters)
@@ -452,8 +452,8 @@ class TestSpacesContracts:
                     next(result)
 
 
-    def test_get_by_id_response_structure(self):
-        """Test get_by_id response structure validation."""
+    def test_get_by_creator_ids_response_structure(self):
+        """Test get_by_creator_ids response structure validation."""
         with patch.object(self.client, "session") as mock_session:
             # Create mock response with expected structure
             mock_response_data = {
@@ -466,10 +466,10 @@ class TestSpacesContracts:
             mock_session.get.return_value = mock_response
             # Prepare minimal valid parameters
             kwargs = {}
-            kwargs["id"] = "test_value"
+            kwargs["user_ids"] = ["test"]
             # Add request body if required
             # Call method and verify response structure
-            method = getattr(self.spaces_client, "get_by_id")
+            method = getattr(self.spaces_client, "get_by_creator_ids")
             result = method(**kwargs)
             # Verify response object has expected attributes
             # Optional field - just check it doesn't cause errors if accessed
@@ -632,8 +632,8 @@ class TestSpacesContracts:
                 )
 
 
-    def test_get_buyers_request_structure(self):
-        """Test get_buyers request structure."""
+    def test_get_by_id_request_structure(self):
+        """Test get_by_id request structure."""
         # Mock the session to capture request details
         with patch.object(self.client, "session") as mock_session:
             mock_response = Mock()
@@ -650,7 +650,7 @@ class TestSpacesContracts:
             # Add request body if required
             # Call the method
             try:
-                method = getattr(self.spaces_client, "get_buyers")
+                method = getattr(self.spaces_client, "get_by_id")
                 # Check if this might be a streaming operation by inspecting return type
                 import types
                 import inspect
@@ -713,7 +713,7 @@ class TestSpacesContracts:
                 called_url = (
                     call_args[0][0] if call_args[0] else call_args[1].get("url", "")
                 )
-                expected_path = "/2/spaces/{id}/buyers"
+                expected_path = "/2/spaces/{id}"
                 assert expected_path.replace("{", "").replace(
                     "}", ""
                 ) in called_url or any(
@@ -729,12 +729,12 @@ class TestSpacesContracts:
                     # For regular operations, verify we got a result
                     assert result is not None, "Method should return a result"
             except Exception as e:
-                pytest.fail(f"Contract test failed for get_buyers: {e}")
+                pytest.fail(f"Contract test failed for get_by_id: {e}")
 
 
-    def test_get_buyers_required_parameters(self):
-        """Test that get_buyers handles parameters correctly."""
-        method = getattr(self.spaces_client, "get_buyers")
+    def test_get_by_id_required_parameters(self):
+        """Test that get_by_id handles parameters correctly."""
+        method = getattr(self.spaces_client, "get_by_id")
         # Test with missing required parameters - mock the request to avoid network calls
         with patch.object(self.client, "session") as mock_session:
             # Mock a 400 response (typical for missing required parameters)
@@ -754,8 +754,8 @@ class TestSpacesContracts:
                     next(result)
 
 
-    def test_get_buyers_response_structure(self):
-        """Test get_buyers response structure validation."""
+    def test_get_by_id_response_structure(self):
+        """Test get_by_id response structure validation."""
         with patch.object(self.client, "session") as mock_session:
             # Create mock response with expected structure
             mock_response_data = {
@@ -771,7 +771,7 @@ class TestSpacesContracts:
             kwargs["id"] = "test_value"
             # Add request body if required
             # Call method and verify response structure
-            method = getattr(self.spaces_client, "get_buyers")
+            method = getattr(self.spaces_client, "get_by_id")
             result = method(**kwargs)
             # Verify response object has expected attributes
             # Optional field - just check it doesn't cause errors if accessed
@@ -783,8 +783,8 @@ class TestSpacesContracts:
                 )
 
 
-    def test_get_by_creator_ids_request_structure(self):
-        """Test get_by_creator_ids request structure."""
+    def test_search_request_structure(self):
+        """Test search request structure."""
         # Mock the session to capture request details
         with patch.object(self.client, "session") as mock_session:
             mock_response = Mock()
@@ -797,11 +797,11 @@ class TestSpacesContracts:
             # Prepare test parameters
             kwargs = {}
             # Add required parameters
-            kwargs["user_ids"] = ["test_item"]
+            kwargs["query"] = "test_query"
             # Add request body if required
             # Call the method
             try:
-                method = getattr(self.spaces_client, "get_by_creator_ids")
+                method = getattr(self.spaces_client, "search")
                 # Check if this might be a streaming operation by inspecting return type
                 import types
                 import inspect
@@ -864,7 +864,7 @@ class TestSpacesContracts:
                 called_url = (
                     call_args[0][0] if call_args[0] else call_args[1].get("url", "")
                 )
-                expected_path = "/2/spaces/by/creator_ids"
+                expected_path = "/2/spaces/search"
                 assert expected_path.replace("{", "").replace(
                     "}", ""
                 ) in called_url or any(
@@ -880,12 +880,12 @@ class TestSpacesContracts:
                     # For regular operations, verify we got a result
                     assert result is not None, "Method should return a result"
             except Exception as e:
-                pytest.fail(f"Contract test failed for get_by_creator_ids: {e}")
+                pytest.fail(f"Contract test failed for search: {e}")
 
 
-    def test_get_by_creator_ids_required_parameters(self):
-        """Test that get_by_creator_ids handles parameters correctly."""
-        method = getattr(self.spaces_client, "get_by_creator_ids")
+    def test_search_required_parameters(self):
+        """Test that search handles parameters correctly."""
+        method = getattr(self.spaces_client, "search")
         # Test with missing required parameters - mock the request to avoid network calls
         with patch.object(self.client, "session") as mock_session:
             # Mock a 400 response (typical for missing required parameters)
@@ -905,8 +905,8 @@ class TestSpacesContracts:
                     next(result)
 
 
-    def test_get_by_creator_ids_response_structure(self):
-        """Test get_by_creator_ids response structure validation."""
+    def test_search_response_structure(self):
+        """Test search response structure validation."""
         with patch.object(self.client, "session") as mock_session:
             # Create mock response with expected structure
             mock_response_data = {
@@ -919,10 +919,10 @@ class TestSpacesContracts:
             mock_session.get.return_value = mock_response
             # Prepare minimal valid parameters
             kwargs = {}
-            kwargs["user_ids"] = ["test"]
+            kwargs["query"] = "test_value"
             # Add request body if required
             # Call method and verify response structure
-            method = getattr(self.spaces_client, "get_by_creator_ids")
+            method = getattr(self.spaces_client, "search")
             result = method(**kwargs)
             # Verify response object has expected attributes
             # Optional field - just check it doesn't cause errors if accessed

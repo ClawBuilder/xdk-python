@@ -28,40 +28,35 @@ class TestPostsStructure:
         self.posts_client = getattr(self.client, "posts")
 
 
-    def test_get_quoted_exists(self):
-        """Test that get_quoted method exists with correct signature."""
+    def test_get_analytics_exists(self):
+        """Test that get_analytics method exists with correct signature."""
         # Check method exists
-        method = getattr(PostsClient, "get_quoted", None)
-        assert method is not None, f"Method get_quoted does not exist on PostsClient"
+        method = getattr(PostsClient, "get_analytics", None)
+        assert method is not None, f"Method get_analytics does not exist on PostsClient"
         # Check method is callable
-        assert callable(method), f"get_quoted is not callable"
+        assert callable(method), f"get_analytics is not callable"
         # Check method signature
         sig = inspect.signature(method)
         params = list(sig.parameters.keys())
         # Should have 'self' as first parameter
-        assert len(params) >= 1, f"get_quoted should have at least 'self' parameter"
+        assert len(params) >= 1, f"get_analytics should have at least 'self' parameter"
         assert (
             params[0] == "self"
         ), f"First parameter should be 'self', got '{params[0]}'"
         # Check required parameters exist (excluding 'self')
         required_params = [
-            "id",
+            "ids",
+            "end_time",
+            "start_time",
+            "granularity",
         ]
         for required_param in required_params:
             assert (
                 required_param in params
-            ), f"Required parameter '{required_param}' missing from get_quoted"
+            ), f"Required parameter '{required_param}' missing from get_analytics"
         # Check optional parameters have defaults (excluding 'self')
         optional_params = [
-            "max_results",
-            "pagination_token",
-            "exclude",
-            "tweet.fields",
-            "expansions",
-            "media.fields",
-            "poll.fields",
-            "user.fields",
-            "place.fields",
+            "analytics.fields",
         ]
         for optional_param in optional_params:
             if optional_param in params:
@@ -71,33 +66,14 @@ class TestPostsStructure:
                 ), f"Optional parameter '{optional_param}' should have a default value"
 
 
-    def test_get_quoted_return_annotation(self):
-        """Test that get_quoted has proper return type annotation."""
-        method = getattr(PostsClient, "get_quoted")
+    def test_get_analytics_return_annotation(self):
+        """Test that get_analytics has proper return type annotation."""
+        method = getattr(PostsClient, "get_analytics")
         sig = inspect.signature(method)
         # Check return annotation exists
         assert (
             sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_quoted should have return type annotation"
-
-
-    def test_get_quoted_pagination_params(self):
-        """Test that get_quoted has pagination parameters."""
-        method = getattr(PostsClient, "get_quoted")
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have pagination-related parameters
-        pagination_params = [
-            "pagination_token",
-            "max_results",
-            "next_token",
-            "cursor",
-            "limit",
-        ]
-        has_pagination_param = any(param in params for param in pagination_params)
-        assert (
-            has_pagination_param
-        ), f"Paginated method get_quoted should have pagination parameters"
+        ), f"Method get_analytics should have return type annotation"
 
 
     def test_hide_reply_exists(self):
@@ -143,22 +119,18 @@ class TestPostsStructure:
         ), f"Method hide_reply should have return type annotation"
 
 
-    def test_get_counts_recent_exists(self):
-        """Test that get_counts_recent method exists with correct signature."""
+    def test_search_recent_exists(self):
+        """Test that search_recent method exists with correct signature."""
         # Check method exists
-        method = getattr(PostsClient, "get_counts_recent", None)
-        assert (
-            method is not None
-        ), f"Method get_counts_recent does not exist on PostsClient"
+        method = getattr(PostsClient, "search_recent", None)
+        assert method is not None, f"Method search_recent does not exist on PostsClient"
         # Check method is callable
-        assert callable(method), f"get_counts_recent is not callable"
+        assert callable(method), f"search_recent is not callable"
         # Check method signature
         sig = inspect.signature(method)
         params = list(sig.parameters.keys())
         # Should have 'self' as first parameter
-        assert (
-            len(params) >= 1
-        ), f"get_counts_recent should have at least 'self' parameter"
+        assert len(params) >= 1, f"search_recent should have at least 'self' parameter"
         assert (
             params[0] == "self"
         ), f"First parameter should be 'self', got '{params[0]}'"
@@ -169,17 +141,23 @@ class TestPostsStructure:
         for required_param in required_params:
             assert (
                 required_param in params
-            ), f"Required parameter '{required_param}' missing from get_counts_recent"
+            ), f"Required parameter '{required_param}' missing from search_recent"
         # Check optional parameters have defaults (excluding 'self')
         optional_params = [
             "start_time",
             "end_time",
             "since_id",
             "until_id",
+            "max_results",
             "next_token",
             "pagination_token",
-            "granularity",
-            "search_count.fields",
+            "sort_order",
+            "tweet.fields",
+            "expansions",
+            "media.fields",
+            "poll.fields",
+            "user.fields",
+            "place.fields",
         ]
         for optional_param in optional_params:
             if optional_param in params:
@@ -189,14 +167,33 @@ class TestPostsStructure:
                 ), f"Optional parameter '{optional_param}' should have a default value"
 
 
-    def test_get_counts_recent_return_annotation(self):
-        """Test that get_counts_recent has proper return type annotation."""
-        method = getattr(PostsClient, "get_counts_recent")
+    def test_search_recent_return_annotation(self):
+        """Test that search_recent has proper return type annotation."""
+        method = getattr(PostsClient, "search_recent")
         sig = inspect.signature(method)
         # Check return annotation exists
         assert (
             sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_counts_recent should have return type annotation"
+        ), f"Method search_recent should have return type annotation"
+
+
+    def test_search_recent_pagination_params(self):
+        """Test that search_recent has pagination parameters."""
+        method = getattr(PostsClient, "search_recent")
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have pagination-related parameters
+        pagination_params = [
+            "pagination_token",
+            "max_results",
+            "next_token",
+            "cursor",
+            "limit",
+        ]
+        has_pagination_param = any(param in params for param in pagination_params)
+        assert (
+            has_pagination_param
+        ), f"Paginated method search_recent should have pagination parameters"
 
 
     def test_get_by_id_exists(self):
@@ -292,6 +289,132 @@ class TestPostsStructure:
         ), f"Method delete should have return type annotation"
 
 
+    def test_get_counts_all_exists(self):
+        """Test that get_counts_all method exists with correct signature."""
+        # Check method exists
+        method = getattr(PostsClient, "get_counts_all", None)
+        assert (
+            method is not None
+        ), f"Method get_counts_all does not exist on PostsClient"
+        # Check method is callable
+        assert callable(method), f"get_counts_all is not callable"
+        # Check method signature
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have 'self' as first parameter
+        assert len(params) >= 1, f"get_counts_all should have at least 'self' parameter"
+        assert (
+            params[0] == "self"
+        ), f"First parameter should be 'self', got '{params[0]}'"
+        # Check required parameters exist (excluding 'self')
+        required_params = [
+            "query",
+        ]
+        for required_param in required_params:
+            assert (
+                required_param in params
+            ), f"Required parameter '{required_param}' missing from get_counts_all"
+        # Check optional parameters have defaults (excluding 'self')
+        optional_params = [
+            "start_time",
+            "end_time",
+            "since_id",
+            "until_id",
+            "next_token",
+            "pagination_token",
+            "granularity",
+            "search_count.fields",
+        ]
+        for optional_param in optional_params:
+            if optional_param in params:
+                param_obj = sig.parameters[optional_param]
+                assert (
+                    param_obj.default is not inspect.Parameter.empty
+                ), f"Optional parameter '{optional_param}' should have a default value"
+
+
+    def test_get_counts_all_return_annotation(self):
+        """Test that get_counts_all has proper return type annotation."""
+        method = getattr(PostsClient, "get_counts_all")
+        sig = inspect.signature(method)
+        # Check return annotation exists
+        assert (
+            sig.return_annotation is not inspect.Signature.empty
+        ), f"Method get_counts_all should have return type annotation"
+
+
+    def test_get_reposted_by_exists(self):
+        """Test that get_reposted_by method exists with correct signature."""
+        # Check method exists
+        method = getattr(PostsClient, "get_reposted_by", None)
+        assert (
+            method is not None
+        ), f"Method get_reposted_by does not exist on PostsClient"
+        # Check method is callable
+        assert callable(method), f"get_reposted_by is not callable"
+        # Check method signature
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have 'self' as first parameter
+        assert (
+            len(params) >= 1
+        ), f"get_reposted_by should have at least 'self' parameter"
+        assert (
+            params[0] == "self"
+        ), f"First parameter should be 'self', got '{params[0]}'"
+        # Check required parameters exist (excluding 'self')
+        required_params = [
+            "id",
+        ]
+        for required_param in required_params:
+            assert (
+                required_param in params
+            ), f"Required parameter '{required_param}' missing from get_reposted_by"
+        # Check optional parameters have defaults (excluding 'self')
+        optional_params = [
+            "max_results",
+            "pagination_token",
+            "user.fields",
+            "expansions",
+            "tweet.fields",
+        ]
+        for optional_param in optional_params:
+            if optional_param in params:
+                param_obj = sig.parameters[optional_param]
+                assert (
+                    param_obj.default is not inspect.Parameter.empty
+                ), f"Optional parameter '{optional_param}' should have a default value"
+
+
+    def test_get_reposted_by_return_annotation(self):
+        """Test that get_reposted_by has proper return type annotation."""
+        method = getattr(PostsClient, "get_reposted_by")
+        sig = inspect.signature(method)
+        # Check return annotation exists
+        assert (
+            sig.return_annotation is not inspect.Signature.empty
+        ), f"Method get_reposted_by should have return type annotation"
+
+
+    def test_get_reposted_by_pagination_params(self):
+        """Test that get_reposted_by has pagination parameters."""
+        method = getattr(PostsClient, "get_reposted_by")
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have pagination-related parameters
+        pagination_params = [
+            "pagination_token",
+            "max_results",
+            "next_token",
+            "cursor",
+            "limit",
+        ]
+        has_pagination_param = any(param in params for param in pagination_params)
+        assert (
+            has_pagination_param
+        ), f"Paginated method get_reposted_by should have pagination parameters"
+
+
     def test_get_liking_users_exists(self):
         """Test that get_liking_users method exists with correct signature."""
         # Check method exists
@@ -362,60 +485,6 @@ class TestPostsStructure:
         assert (
             has_pagination_param
         ), f"Paginated method get_liking_users should have pagination parameters"
-
-
-    def test_get_counts_all_exists(self):
-        """Test that get_counts_all method exists with correct signature."""
-        # Check method exists
-        method = getattr(PostsClient, "get_counts_all", None)
-        assert (
-            method is not None
-        ), f"Method get_counts_all does not exist on PostsClient"
-        # Check method is callable
-        assert callable(method), f"get_counts_all is not callable"
-        # Check method signature
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have 'self' as first parameter
-        assert len(params) >= 1, f"get_counts_all should have at least 'self' parameter"
-        assert (
-            params[0] == "self"
-        ), f"First parameter should be 'self', got '{params[0]}'"
-        # Check required parameters exist (excluding 'self')
-        required_params = [
-            "query",
-        ]
-        for required_param in required_params:
-            assert (
-                required_param in params
-            ), f"Required parameter '{required_param}' missing from get_counts_all"
-        # Check optional parameters have defaults (excluding 'self')
-        optional_params = [
-            "start_time",
-            "end_time",
-            "since_id",
-            "until_id",
-            "next_token",
-            "pagination_token",
-            "granularity",
-            "search_count.fields",
-        ]
-        for optional_param in optional_params:
-            if optional_param in params:
-                param_obj = sig.parameters[optional_param]
-                assert (
-                    param_obj.default is not inspect.Parameter.empty
-                ), f"Optional parameter '{optional_param}' should have a default value"
-
-
-    def test_get_counts_all_return_annotation(self):
-        """Test that get_counts_all has proper return type annotation."""
-        method = getattr(PostsClient, "get_counts_all")
-        sig = inspect.signature(method)
-        # Check return annotation exists
-        assert (
-            sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_counts_all should have return type annotation"
 
 
     def test_search_all_exists(self):
@@ -495,6 +564,62 @@ class TestPostsStructure:
         ), f"Paginated method search_all should have pagination parameters"
 
 
+    def test_get_counts_recent_exists(self):
+        """Test that get_counts_recent method exists with correct signature."""
+        # Check method exists
+        method = getattr(PostsClient, "get_counts_recent", None)
+        assert (
+            method is not None
+        ), f"Method get_counts_recent does not exist on PostsClient"
+        # Check method is callable
+        assert callable(method), f"get_counts_recent is not callable"
+        # Check method signature
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have 'self' as first parameter
+        assert (
+            len(params) >= 1
+        ), f"get_counts_recent should have at least 'self' parameter"
+        assert (
+            params[0] == "self"
+        ), f"First parameter should be 'self', got '{params[0]}'"
+        # Check required parameters exist (excluding 'self')
+        required_params = [
+            "query",
+        ]
+        for required_param in required_params:
+            assert (
+                required_param in params
+            ), f"Required parameter '{required_param}' missing from get_counts_recent"
+        # Check optional parameters have defaults (excluding 'self')
+        optional_params = [
+            "start_time",
+            "end_time",
+            "since_id",
+            "until_id",
+            "next_token",
+            "pagination_token",
+            "granularity",
+            "search_count.fields",
+        ]
+        for optional_param in optional_params:
+            if optional_param in params:
+                param_obj = sig.parameters[optional_param]
+                assert (
+                    param_obj.default is not inspect.Parameter.empty
+                ), f"Optional parameter '{optional_param}' should have a default value"
+
+
+    def test_get_counts_recent_return_annotation(self):
+        """Test that get_counts_recent has proper return type annotation."""
+        method = getattr(PostsClient, "get_counts_recent")
+        sig = inspect.signature(method)
+        # Check return annotation exists
+        assert (
+            sig.return_annotation is not inspect.Signature.empty
+        ), f"Method get_counts_recent should have return type annotation"
+
+
     def test_get_insights_historical_exists(self):
         """Test that get_insights_historical method exists with correct signature."""
         # Check method exists
@@ -546,6 +671,200 @@ class TestPostsStructure:
         assert (
             sig.return_annotation is not inspect.Signature.empty
         ), f"Method get_insights_historical should have return type annotation"
+
+
+    def test_get_reposts_exists(self):
+        """Test that get_reposts method exists with correct signature."""
+        # Check method exists
+        method = getattr(PostsClient, "get_reposts", None)
+        assert method is not None, f"Method get_reposts does not exist on PostsClient"
+        # Check method is callable
+        assert callable(method), f"get_reposts is not callable"
+        # Check method signature
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have 'self' as first parameter
+        assert len(params) >= 1, f"get_reposts should have at least 'self' parameter"
+        assert (
+            params[0] == "self"
+        ), f"First parameter should be 'self', got '{params[0]}'"
+        # Check required parameters exist (excluding 'self')
+        required_params = [
+            "id",
+        ]
+        for required_param in required_params:
+            assert (
+                required_param in params
+            ), f"Required parameter '{required_param}' missing from get_reposts"
+        # Check optional parameters have defaults (excluding 'self')
+        optional_params = [
+            "max_results",
+            "pagination_token",
+            "tweet.fields",
+            "expansions",
+            "media.fields",
+            "poll.fields",
+            "user.fields",
+            "place.fields",
+        ]
+        for optional_param in optional_params:
+            if optional_param in params:
+                param_obj = sig.parameters[optional_param]
+                assert (
+                    param_obj.default is not inspect.Parameter.empty
+                ), f"Optional parameter '{optional_param}' should have a default value"
+
+
+    def test_get_reposts_return_annotation(self):
+        """Test that get_reposts has proper return type annotation."""
+        method = getattr(PostsClient, "get_reposts")
+        sig = inspect.signature(method)
+        # Check return annotation exists
+        assert (
+            sig.return_annotation is not inspect.Signature.empty
+        ), f"Method get_reposts should have return type annotation"
+
+
+    def test_get_reposts_pagination_params(self):
+        """Test that get_reposts has pagination parameters."""
+        method = getattr(PostsClient, "get_reposts")
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have pagination-related parameters
+        pagination_params = [
+            "pagination_token",
+            "max_results",
+            "next_token",
+            "cursor",
+            "limit",
+        ]
+        has_pagination_param = any(param in params for param in pagination_params)
+        assert (
+            has_pagination_param
+        ), f"Paginated method get_reposts should have pagination parameters"
+
+
+    def test_get_quoted_exists(self):
+        """Test that get_quoted method exists with correct signature."""
+        # Check method exists
+        method = getattr(PostsClient, "get_quoted", None)
+        assert method is not None, f"Method get_quoted does not exist on PostsClient"
+        # Check method is callable
+        assert callable(method), f"get_quoted is not callable"
+        # Check method signature
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have 'self' as first parameter
+        assert len(params) >= 1, f"get_quoted should have at least 'self' parameter"
+        assert (
+            params[0] == "self"
+        ), f"First parameter should be 'self', got '{params[0]}'"
+        # Check required parameters exist (excluding 'self')
+        required_params = [
+            "id",
+        ]
+        for required_param in required_params:
+            assert (
+                required_param in params
+            ), f"Required parameter '{required_param}' missing from get_quoted"
+        # Check optional parameters have defaults (excluding 'self')
+        optional_params = [
+            "max_results",
+            "pagination_token",
+            "exclude",
+            "tweet.fields",
+            "expansions",
+            "media.fields",
+            "poll.fields",
+            "user.fields",
+            "place.fields",
+        ]
+        for optional_param in optional_params:
+            if optional_param in params:
+                param_obj = sig.parameters[optional_param]
+                assert (
+                    param_obj.default is not inspect.Parameter.empty
+                ), f"Optional parameter '{optional_param}' should have a default value"
+
+
+    def test_get_quoted_return_annotation(self):
+        """Test that get_quoted has proper return type annotation."""
+        method = getattr(PostsClient, "get_quoted")
+        sig = inspect.signature(method)
+        # Check return annotation exists
+        assert (
+            sig.return_annotation is not inspect.Signature.empty
+        ), f"Method get_quoted should have return type annotation"
+
+
+    def test_get_quoted_pagination_params(self):
+        """Test that get_quoted has pagination parameters."""
+        method = getattr(PostsClient, "get_quoted")
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have pagination-related parameters
+        pagination_params = [
+            "pagination_token",
+            "max_results",
+            "next_token",
+            "cursor",
+            "limit",
+        ]
+        has_pagination_param = any(param in params for param in pagination_params)
+        assert (
+            has_pagination_param
+        ), f"Paginated method get_quoted should have pagination parameters"
+
+
+    def test_get_insights28hr_exists(self):
+        """Test that get_insights28hr method exists with correct signature."""
+        # Check method exists
+        method = getattr(PostsClient, "get_insights28hr", None)
+        assert (
+            method is not None
+        ), f"Method get_insights28hr does not exist on PostsClient"
+        # Check method is callable
+        assert callable(method), f"get_insights28hr is not callable"
+        # Check method signature
+        sig = inspect.signature(method)
+        params = list(sig.parameters.keys())
+        # Should have 'self' as first parameter
+        assert (
+            len(params) >= 1
+        ), f"get_insights28hr should have at least 'self' parameter"
+        assert (
+            params[0] == "self"
+        ), f"First parameter should be 'self', got '{params[0]}'"
+        # Check required parameters exist (excluding 'self')
+        required_params = [
+            "tweet_ids",
+            "granularity",
+            "requested_metrics",
+        ]
+        for required_param in required_params:
+            assert (
+                required_param in params
+            ), f"Required parameter '{required_param}' missing from get_insights28hr"
+        # Check optional parameters have defaults (excluding 'self')
+        optional_params = [
+            "engagement.fields",
+        ]
+        for optional_param in optional_params:
+            if optional_param in params:
+                param_obj = sig.parameters[optional_param]
+                assert (
+                    param_obj.default is not inspect.Parameter.empty
+                ), f"Optional parameter '{optional_param}' should have a default value"
+
+
+    def test_get_insights28hr_return_annotation(self):
+        """Test that get_insights28hr has proper return type annotation."""
+        method = getattr(PostsClient, "get_insights28hr")
+        sig = inspect.signature(method)
+        # Check return annotation exists
+        assert (
+            sig.return_annotation is not inspect.Signature.empty
+        ), f"Method get_insights28hr should have return type annotation"
 
 
     def test_get_by_ids_exists(self):
@@ -639,344 +958,25 @@ class TestPostsStructure:
         ), f"Method create should have return type annotation"
 
 
-    def test_get_insights28hr_exists(self):
-        """Test that get_insights28hr method exists with correct signature."""
-        # Check method exists
-        method = getattr(PostsClient, "get_insights28hr", None)
-        assert (
-            method is not None
-        ), f"Method get_insights28hr does not exist on PostsClient"
-        # Check method is callable
-        assert callable(method), f"get_insights28hr is not callable"
-        # Check method signature
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have 'self' as first parameter
-        assert (
-            len(params) >= 1
-        ), f"get_insights28hr should have at least 'self' parameter"
-        assert (
-            params[0] == "self"
-        ), f"First parameter should be 'self', got '{params[0]}'"
-        # Check required parameters exist (excluding 'self')
-        required_params = [
-            "tweet_ids",
-            "granularity",
-            "requested_metrics",
-        ]
-        for required_param in required_params:
-            assert (
-                required_param in params
-            ), f"Required parameter '{required_param}' missing from get_insights28hr"
-        # Check optional parameters have defaults (excluding 'self')
-        optional_params = [
-            "engagement.fields",
-        ]
-        for optional_param in optional_params:
-            if optional_param in params:
-                param_obj = sig.parameters[optional_param]
-                assert (
-                    param_obj.default is not inspect.Parameter.empty
-                ), f"Optional parameter '{optional_param}' should have a default value"
-
-
-    def test_get_insights28hr_return_annotation(self):
-        """Test that get_insights28hr has proper return type annotation."""
-        method = getattr(PostsClient, "get_insights28hr")
-        sig = inspect.signature(method)
-        # Check return annotation exists
-        assert (
-            sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_insights28hr should have return type annotation"
-
-
-    def test_get_reposts_exists(self):
-        """Test that get_reposts method exists with correct signature."""
-        # Check method exists
-        method = getattr(PostsClient, "get_reposts", None)
-        assert method is not None, f"Method get_reposts does not exist on PostsClient"
-        # Check method is callable
-        assert callable(method), f"get_reposts is not callable"
-        # Check method signature
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have 'self' as first parameter
-        assert len(params) >= 1, f"get_reposts should have at least 'self' parameter"
-        assert (
-            params[0] == "self"
-        ), f"First parameter should be 'self', got '{params[0]}'"
-        # Check required parameters exist (excluding 'self')
-        required_params = [
-            "id",
-        ]
-        for required_param in required_params:
-            assert (
-                required_param in params
-            ), f"Required parameter '{required_param}' missing from get_reposts"
-        # Check optional parameters have defaults (excluding 'self')
-        optional_params = [
-            "max_results",
-            "pagination_token",
-            "tweet.fields",
-            "expansions",
-            "media.fields",
-            "poll.fields",
-            "user.fields",
-            "place.fields",
-        ]
-        for optional_param in optional_params:
-            if optional_param in params:
-                param_obj = sig.parameters[optional_param]
-                assert (
-                    param_obj.default is not inspect.Parameter.empty
-                ), f"Optional parameter '{optional_param}' should have a default value"
-
-
-    def test_get_reposts_return_annotation(self):
-        """Test that get_reposts has proper return type annotation."""
-        method = getattr(PostsClient, "get_reposts")
-        sig = inspect.signature(method)
-        # Check return annotation exists
-        assert (
-            sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_reposts should have return type annotation"
-
-
-    def test_get_reposts_pagination_params(self):
-        """Test that get_reposts has pagination parameters."""
-        method = getattr(PostsClient, "get_reposts")
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have pagination-related parameters
-        pagination_params = [
-            "pagination_token",
-            "max_results",
-            "next_token",
-            "cursor",
-            "limit",
-        ]
-        has_pagination_param = any(param in params for param in pagination_params)
-        assert (
-            has_pagination_param
-        ), f"Paginated method get_reposts should have pagination parameters"
-
-
-    def test_search_recent_exists(self):
-        """Test that search_recent method exists with correct signature."""
-        # Check method exists
-        method = getattr(PostsClient, "search_recent", None)
-        assert method is not None, f"Method search_recent does not exist on PostsClient"
-        # Check method is callable
-        assert callable(method), f"search_recent is not callable"
-        # Check method signature
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have 'self' as first parameter
-        assert len(params) >= 1, f"search_recent should have at least 'self' parameter"
-        assert (
-            params[0] == "self"
-        ), f"First parameter should be 'self', got '{params[0]}'"
-        # Check required parameters exist (excluding 'self')
-        required_params = [
-            "query",
-        ]
-        for required_param in required_params:
-            assert (
-                required_param in params
-            ), f"Required parameter '{required_param}' missing from search_recent"
-        # Check optional parameters have defaults (excluding 'self')
-        optional_params = [
-            "start_time",
-            "end_time",
-            "since_id",
-            "until_id",
-            "max_results",
-            "next_token",
-            "pagination_token",
-            "sort_order",
-            "tweet.fields",
-            "expansions",
-            "media.fields",
-            "poll.fields",
-            "user.fields",
-            "place.fields",
-        ]
-        for optional_param in optional_params:
-            if optional_param in params:
-                param_obj = sig.parameters[optional_param]
-                assert (
-                    param_obj.default is not inspect.Parameter.empty
-                ), f"Optional parameter '{optional_param}' should have a default value"
-
-
-    def test_search_recent_return_annotation(self):
-        """Test that search_recent has proper return type annotation."""
-        method = getattr(PostsClient, "search_recent")
-        sig = inspect.signature(method)
-        # Check return annotation exists
-        assert (
-            sig.return_annotation is not inspect.Signature.empty
-        ), f"Method search_recent should have return type annotation"
-
-
-    def test_search_recent_pagination_params(self):
-        """Test that search_recent has pagination parameters."""
-        method = getattr(PostsClient, "search_recent")
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have pagination-related parameters
-        pagination_params = [
-            "pagination_token",
-            "max_results",
-            "next_token",
-            "cursor",
-            "limit",
-        ]
-        has_pagination_param = any(param in params for param in pagination_params)
-        assert (
-            has_pagination_param
-        ), f"Paginated method search_recent should have pagination parameters"
-
-
-    def test_get_reposted_by_exists(self):
-        """Test that get_reposted_by method exists with correct signature."""
-        # Check method exists
-        method = getattr(PostsClient, "get_reposted_by", None)
-        assert (
-            method is not None
-        ), f"Method get_reposted_by does not exist on PostsClient"
-        # Check method is callable
-        assert callable(method), f"get_reposted_by is not callable"
-        # Check method signature
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have 'self' as first parameter
-        assert (
-            len(params) >= 1
-        ), f"get_reposted_by should have at least 'self' parameter"
-        assert (
-            params[0] == "self"
-        ), f"First parameter should be 'self', got '{params[0]}'"
-        # Check required parameters exist (excluding 'self')
-        required_params = [
-            "id",
-        ]
-        for required_param in required_params:
-            assert (
-                required_param in params
-            ), f"Required parameter '{required_param}' missing from get_reposted_by"
-        # Check optional parameters have defaults (excluding 'self')
-        optional_params = [
-            "max_results",
-            "pagination_token",
-            "user.fields",
-            "expansions",
-            "tweet.fields",
-        ]
-        for optional_param in optional_params:
-            if optional_param in params:
-                param_obj = sig.parameters[optional_param]
-                assert (
-                    param_obj.default is not inspect.Parameter.empty
-                ), f"Optional parameter '{optional_param}' should have a default value"
-
-
-    def test_get_reposted_by_return_annotation(self):
-        """Test that get_reposted_by has proper return type annotation."""
-        method = getattr(PostsClient, "get_reposted_by")
-        sig = inspect.signature(method)
-        # Check return annotation exists
-        assert (
-            sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_reposted_by should have return type annotation"
-
-
-    def test_get_reposted_by_pagination_params(self):
-        """Test that get_reposted_by has pagination parameters."""
-        method = getattr(PostsClient, "get_reposted_by")
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have pagination-related parameters
-        pagination_params = [
-            "pagination_token",
-            "max_results",
-            "next_token",
-            "cursor",
-            "limit",
-        ]
-        has_pagination_param = any(param in params for param in pagination_params)
-        assert (
-            has_pagination_param
-        ), f"Paginated method get_reposted_by should have pagination parameters"
-
-
-    def test_get_analytics_exists(self):
-        """Test that get_analytics method exists with correct signature."""
-        # Check method exists
-        method = getattr(PostsClient, "get_analytics", None)
-        assert method is not None, f"Method get_analytics does not exist on PostsClient"
-        # Check method is callable
-        assert callable(method), f"get_analytics is not callable"
-        # Check method signature
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        # Should have 'self' as first parameter
-        assert len(params) >= 1, f"get_analytics should have at least 'self' parameter"
-        assert (
-            params[0] == "self"
-        ), f"First parameter should be 'self', got '{params[0]}'"
-        # Check required parameters exist (excluding 'self')
-        required_params = [
-            "ids",
-            "end_time",
-            "start_time",
-            "granularity",
-        ]
-        for required_param in required_params:
-            assert (
-                required_param in params
-            ), f"Required parameter '{required_param}' missing from get_analytics"
-        # Check optional parameters have defaults (excluding 'self')
-        optional_params = [
-            "analytics.fields",
-        ]
-        for optional_param in optional_params:
-            if optional_param in params:
-                param_obj = sig.parameters[optional_param]
-                assert (
-                    param_obj.default is not inspect.Parameter.empty
-                ), f"Optional parameter '{optional_param}' should have a default value"
-
-
-    def test_get_analytics_return_annotation(self):
-        """Test that get_analytics has proper return type annotation."""
-        method = getattr(PostsClient, "get_analytics")
-        sig = inspect.signature(method)
-        # Check return annotation exists
-        assert (
-            sig.return_annotation is not inspect.Signature.empty
-        ), f"Method get_analytics should have return type annotation"
-
-
     def test_all_expected_methods_exist(self):
         """Test that all expected methods exist on the client."""
         expected_methods = [
-            "get_quoted",
+            "get_analytics",
             "hide_reply",
-            "get_counts_recent",
+            "search_recent",
             "get_by_id",
             "delete",
-            "get_liking_users",
             "get_counts_all",
+            "get_reposted_by",
+            "get_liking_users",
             "search_all",
+            "get_counts_recent",
             "get_insights_historical",
+            "get_reposts",
+            "get_quoted",
+            "get_insights28hr",
             "get_by_ids",
             "create",
-            "get_insights28hr",
-            "get_reposts",
-            "search_recent",
-            "get_reposted_by",
-            "get_analytics",
         ]
         for expected_method in expected_methods:
             assert hasattr(

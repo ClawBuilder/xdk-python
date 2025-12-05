@@ -16,17 +16,11 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for create
+# Models for search_eligible_posts
 
 
-class CreateRequest(BaseModel):
-    """Request model for create"""
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
-class CreateResponse(BaseModel):
-    """Response model for create"""
+class SearchEligiblePostsResponse(BaseModel):
+    """Response model for search_eligible_posts"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -46,20 +40,26 @@ class EvaluateResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
+# Models for create
+
+
+class CreateRequest(BaseModel):
+    """Request model for create"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CreateResponse(BaseModel):
+    """Response model for create"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
 # Models for search_written
 
 
 class SearchWrittenResponse(BaseModel):
     """Response model for search_written"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for search_eligible_posts
-
-
-class SearchEligiblePostsResponse(BaseModel):
-    """Response model for search_eligible_posts"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 

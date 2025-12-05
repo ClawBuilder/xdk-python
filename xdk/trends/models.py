@@ -16,15 +16,6 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get_by_woeid
-
-
-class GetByWoeidResponse(BaseModel):
-    """Response model for get_by_woeid"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
 # Models for get_ai
 
 
@@ -39,5 +30,14 @@ class GetAiResponse(BaseModel):
 
 class GetPersonalizedResponse(BaseModel):
     """Response model for get_personalized"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for get_by_woeid
+
+
+class GetByWoeidResponse(BaseModel):
+    """Response model for get_by_woeid"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")

@@ -17,41 +17,41 @@ from typing import Dict, List, Optional, Union, Any, Callable
 from .oauth2_auth import OAuth2PKCEAuth
 from .paginator import Cursor, cursor, PaginationError
 
-from .usage.client import UsageClient
-
-from .communities.client import CommunitiesClient
-
-from .users.client import UsersClient
-
-from .webhooks.client import WebhooksClient
-
-from .general.client import GeneralClient
-
-from .account_activity.client import AccountActivityClient
-
-from .trends.client import TrendsClient
+from .connections.client import ConnectionsClient
 
 from .posts.client import PostsClient
 
-from .compliance.client import ComplianceClient
-
-from .community_notes.client import CommunityNotesClient
-
-from .connections.client import ConnectionsClient
-
-from .media.client import MediaClient
-
-from .spaces.client import SpacesClient
-
-from .activity.client import ActivityClient
-
-from .stream.client import StreamClient
+from .direct_messages.client import DirectMessagesClient
 
 from .news.client import NewsClient
 
-from .direct_messages.client import DirectMessagesClient
+from .spaces.client import SpacesClient
+
+from .usage.client import UsageClient
+
+from .general.client import GeneralClient
+
+from .community_notes.client import CommunityNotesClient
+
+from .compliance.client import ComplianceClient
+
+from .stream.client import StreamClient
+
+from .users.client import UsersClient
+
+from .account_activity.client import AccountActivityClient
+
+from .activity.client import ActivityClient
 
 from .lists.client import ListsClient
+
+from .trends.client import TrendsClient
+
+from .webhooks.client import WebhooksClient
+
+from .media.client import MediaClient
+
+from .communities.client import CommunitiesClient
 
 
 class Client:
@@ -83,7 +83,7 @@ class Client:
             authorization_base_url: The base URL for OAuth2 authorization (defaults to https://x.com/i).
         """
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "xdk-python/0.4.5"})
+        self.session.headers.update({"User-Agent": "xdk-python/0.4.6"})
         self.base_url = base_url
         self.bearer_token = bearer_token
         # Extract access_token from token dict if provided, otherwise use direct access_token parameter
@@ -113,24 +113,24 @@ class Client:
             ):
                 self._access_token = self.oauth2_auth.token["access_token"]
         # Initialize clients for each tag
-        self.usage = UsageClient(self)
-        self.communities = CommunitiesClient(self)
-        self.users = UsersClient(self)
-        self.webhooks = WebhooksClient(self)
-        self.general = GeneralClient(self)
-        self.account_activity = AccountActivityClient(self)
-        self.trends = TrendsClient(self)
-        self.posts = PostsClient(self)
-        self.compliance = ComplianceClient(self)
-        self.community_notes = CommunityNotesClient(self)
         self.connections = ConnectionsClient(self)
-        self.media = MediaClient(self)
-        self.spaces = SpacesClient(self)
-        self.activity = ActivityClient(self)
-        self.stream = StreamClient(self)
-        self.news = NewsClient(self)
+        self.posts = PostsClient(self)
         self.direct_messages = DirectMessagesClient(self)
+        self.news = NewsClient(self)
+        self.spaces = SpacesClient(self)
+        self.usage = UsageClient(self)
+        self.general = GeneralClient(self)
+        self.community_notes = CommunityNotesClient(self)
+        self.compliance = ComplianceClient(self)
+        self.stream = StreamClient(self)
+        self.users = UsersClient(self)
+        self.account_activity = AccountActivityClient(self)
+        self.activity = ActivityClient(self)
         self.lists = ListsClient(self)
+        self.trends = TrendsClient(self)
+        self.webhooks = WebhooksClient(self)
+        self.media = MediaClient(self)
+        self.communities = CommunitiesClient(self)
 
     @property
 
