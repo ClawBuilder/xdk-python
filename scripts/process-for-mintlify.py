@@ -482,6 +482,464 @@ def improve_method_formatting(content: str) -> str:
         r"(#### Parameters\n\n<ParamField[^>]+>\s*</ParamField>\s*\n)\1", r"\1", content
     )
     return content
+    def convert_method(match):
+        method_header = match.group(0)
+        method_name = (
+            match.group(1)
+            .strip()
+            .replace("*", "")
+            .replace("`", "")
+            .replace("\\", "")
+            .replace("_", "_")
+        )
+        params_str = match.group(2).strip() if match.group(2) else ""
+        return_type = match.group(3).strip() if match.group(3) else None
+        # Find method body (until next ### or ####)
+        method_start = match.start()
+        next_method = content.find("###", method_start + 1)
+        if next_method == -1:
+            method_body = content[method_start:]
+        else:
+            method_body = content[method_start:next_method]
+        # Extract description (text after method header, before :param)
+        desc_match = re.search(
+            r"###[^\n]+\n\n([^\n]+(?:\n(?!:param|####|###|####)[^\n]+)*)",
+            method_body,
+            re.MULTILINE,
+        )
+        description = desc_match.group(1).strip() if desc_match else ""
+        # Remove method name from description if it appears
+        description = re.sub(
+            r"^" + re.escape(method_name) + r"\s*$", "", description, flags=re.MULTILINE
+        ).strip()
+        # Parse parameters and convert to ParamField components
+        param_fields = []
+        if params_str:
+            # Simple parameter parsing (split by comma, but handle type annotations)
+            params = []
+            current = ""
+            depth = 0
+            for char in params_str:
+                if char in "[(":
+                    depth += 1
+                elif char in "])":
+                    depth -= 1
+                elif char == "," and depth == 0:
+                    if current.strip():
+                        params.append(current.strip())
+                    current = ""
+                    continue
+                current += char
+            if current.strip():
+                params.append(current.strip())
+            for param in params:
+                # Parse: name: type = default
+                # Handle cases like: client: [Client](xdk.md#xdk.Client)
+                param_match = re.match(
+                    r"(\w+)(?:\s*:\s*([^=]+))?(?:\s*=\s*(.+))?$", param.strip()
+                )
+                if param_match:
+                    param_name = param_match.group(1)
+                    param_type_raw = (
+                        param_match.group(2).strip() if param_match.group(2) else "Any"
+                    )
+                    param_default = (
+                        param_match.group(3).strip() if param_match.group(3) else None
+                    )
+                    # Clean type - handle markdown links first
+                    # Pattern: [Type](path#anchor) -> extract just "Type"
+                    link_match = re.search(r"\[([^\]]+)\]\(([^\)]+)\)", param_type_raw)
+                    if link_match:
+                        param_type = link_match.group(1)  # Use just the link text
+                    else:
+                        # No link, use the raw type but clean it
+                        param_type = param_type_raw
+                        # Remove file references and anchors
+                        param_type = re.sub(r"[a-z_]+\.(md|py)#[^\s]*", "", param_type)
+                        param_type = re.sub(r"#[^\s]*", "", param_type)
+                        # Remove incomplete link patterns like "Client]("
+                        param_type = re.sub(r"\]\([^\)]*$", "", param_type)
+                        param_type = re.sub(r"\]\([^\)]*\)", "", param_type)
+                    # Clean up the type string
+                    param_type = param_type.replace("|", " or ").strip()
+                    # Remove any trailing/leading brackets and parentheses
+                    param_type = re.sub(r"^[\[\(]+", "", param_type)
+                    param_type = re.sub(r"[\]\)]+$", "", param_type)
+                    # Remove any remaining incomplete patterns
+                    param_type = re.sub(r"\]\(.*$", "", param_type)
+                    # Escape angle brackets for MDX
+                    param_type = param_type.replace("<", "&lt;").replace(">", "&gt;")
+                    # Clean up extra spaces
+                    param_type = re.sub(r"\s+", " ", param_type).strip()
+                    # If type is empty or just brackets, default to Any
+                    if not param_type or param_type in ["[", "]", "()", "(", ")", "]("]:
+                        param_type = "Any"
+                    # Find param description
+                    param_desc_match = re.search(
+                        rf":param\s+{param_name}:\s*([^\n]+)", method_body
+                    )
+                    param_desc = (
+                        param_desc_match.group(1).strip() if param_desc_match else ""
+                    )
+                    # Build ParamField - use path instead of name
+                    # For Python methods, parameters are function arguments
+                    # Use "path" location for most parameters, or "body" if it's clearly a request body
+                    param_location = (
+                        "body"
+                        if param_name.lower() in ["body", "data", "payload", "request"]
+                        else "path"
+                    )
+                    param_field = f'<ParamField path="{param_location}.{param_name}" type="{param_type}"'
+                    if param_default:
+                        # Escape default value
+                        param_default_clean = (
+                            param_default.replace('"', "&quot;")
+                            .replace("<", "&lt;")
+                            .replace(">", "&gt;")
+                        )
+                        param_field += f' default="{param_default_clean}"'
+                    param_field += ">"
+                    if param_desc:
+                        param_field += f"\n{param_desc}\n"
+                    param_field += "</ParamField>"
+                    param_fields.append(param_field)
+        # Build new method format
+        new_method = f"### `{method_name}`\n\n"
+        if description:
+            new_method += f"{description}\n\n"
+        if param_fields:
+            new_method += "#### Parameters\n\n"
+            new_method += "\n\n".join(param_fields) + "\n\n"
+        if return_type:
+            # Extract return description
+            return_desc_match = re.search(r":param\s+Returns?:\s*([^\n]+)", method_body)
+            return_desc = (
+                return_desc_match.group(1).strip() if return_desc_match else ""
+            )
+            # Clean return type - handle markdown links
+            return_type_clean = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", return_type)
+            return_type_clean = re.sub(
+                r"[a-z_]+\.(md|py)#[^\s]+", "", return_type_clean
+            )
+            return_type_clean = return_type_clean.replace("[", "").replace("]", "")
+            return_type_clean = return_type_clean.replace("<", "&lt;").replace(
+                ">", "&gt;"
+            )
+            return_type_clean = re.sub(
+                r":param\s+\w+:\s*", "", return_type_clean
+            ).strip()
+            return_type_clean = re.sub(r"\s+", " ", return_type_clean).strip()
+            new_method += "#### Returns\n\n"
+            new_method += f"`{return_type_clean}`"
+            if return_desc and return_desc != return_type_clean:
+                new_method += f" - {return_desc}"
+            new_method += "\n\n"
+        return new_method
+    # Convert method signatures to use ParamField components
+    # Match: ### method_name(params) → ReturnType
+    def process_all_methods(text):
+        # Find all method definitions
+        method_pattern = r"###\s+`?([^\n(]+)`?\s*\(([^)]*)\)(?:\s*→\s*([^\n]+))?"
+        methods = list(re.finditer(method_pattern, text, re.MULTILINE))
+        if not methods:
+            return text
+        # Build result by processing each method and replacing its entire section
+        result_parts = []
+        last_pos = 0
+        for i, match in enumerate(methods):
+            # Add content before this method
+            result_parts.append(text[last_pos : match.start()])
+            # Find where this method's body ends (next method or end of content)
+            method_start = match.start()
+            if i + 1 < len(methods):
+                next_method_start = methods[i + 1].start()
+            else:
+                next_method_start = len(text)
+            # Get the full method section to replace
+            method_section = text[method_start:next_method_start]
+            # Convert this method
+            converted = convert_method(match)
+            # Remove the old method content from the section
+            result_parts.append(converted)
+            last_pos = next_method_start
+        # Add remaining content
+        result_parts.append(text[last_pos:])
+        return "".join(result_parts)
+    content = process_all_methods(content)
+    # Clean up any remaining :param lines that weren't converted
+    content = re.sub(r":param\s+(\w+):\s*([^\n]+)", r"**`\1`** - \2", content)
+    content = re.sub(r":param\s+Returns?:\s*([^\n]+)", r"**Returns:** \1", content)
+    # Remove duplicate return descriptions
+    content = re.sub(
+        r"(#### Returns\n\n`[^\n]+`[^\n]+\n\n)(\*\*`[^\n]+\*\*[^\n]+\n)+",
+        r"\1",
+        content,
+    )
+    # Remove duplicate method descriptions
+    content = re.sub(r"(### `[^\n]+`\n\n[^\n]+\n\n[^\n]+\n\n)(\1)", r"\1", content)
+    # Clean up any remaining old format parameter lines after ParamField sections
+    content = re.sub(r"(</ParamField>\n\n)(\*\*`[^\n]+\*\*[^\n]+\n)+", r"\1", content)
+    # Remove duplicate "Returns:" text in return sections
+    content = re.sub(
+        r"(#### Returns\n\n`[^\n]+`)\s*-\s*\*\*`[^\n]+\*\*\s*-\s*([^\n]+)",
+        r"\1 - \2",
+        content,
+    )
+    # Remove duplicate class definitions that appear after the main class header
+    # Pattern: ### `class xdk.module.ClassName` followed by description and parameters
+    # Find the main class header (should be ## ClassName)
+    main_class_match = re.search(
+        r"##\s+([A-Z][a-zA-Z0-9_]+Client|Client|Paginator|OAuth2PKCEAuth|BaseModel)",
+        content,
+    )
+    if main_class_match:
+        # Everything after the main class header should not have duplicate class definitions
+        before_main = content[: main_class_match.end()]
+        after_main = content[main_class_match.end() :]
+        # Remove any class definitions from after_main
+        after_main = re.sub(
+            r"###\s+`?class\s+xdk\.[^\n]+\n\n[^\n]+\n\n(?:####\s+Parameters[^\n]+\n\n<ParamField[^>]+>\s*</ParamField>\s*\n)?",
+            "",
+            after_main,
+        )
+        content = before_main + after_main
+    # Remove duplicate parameter sections (#### Parameters appearing twice in a row)
+    content = re.sub(
+        r"(#### Parameters\n\n<ParamField[^>]+>\s*</ParamField>\s*\n)\1", r"\1", content
+    )
+    return content
+
+
+    def convert_method(match):
+        method_header = match.group(0)
+        method_name = (
+            match.group(1)
+            .strip()
+            .replace("*", "")
+            .replace("`", "")
+            .replace("\\", "")
+            .replace("_", "_")
+        )
+        params_str = match.group(2).strip() if match.group(2) else ""
+        return_type = match.group(3).strip() if match.group(3) else None
+        # Find method body (until next ### or ####)
+        method_start = match.start()
+        next_method = content.find("###", method_start + 1)
+        if next_method == -1:
+            method_body = content[method_start:]
+        else:
+            method_body = content[method_start:next_method]
+        # Extract description (text after method header, before :param)
+        desc_match = re.search(
+            r"###[^\n]+\n\n([^\n]+(?:\n(?!:param|####|###|####)[^\n]+)*)",
+            method_body,
+            re.MULTILINE,
+        )
+        description = desc_match.group(1).strip() if desc_match else ""
+        # Remove method name from description if it appears
+        description = re.sub(
+            r"^" + re.escape(method_name) + r"\s*$", "", description, flags=re.MULTILINE
+        ).strip()
+        # Parse parameters and convert to ParamField components
+        param_fields = []
+        if params_str:
+            # Simple parameter parsing (split by comma, but handle type annotations)
+            params = []
+            current = ""
+            depth = 0
+            for char in params_str:
+                if char in "[(":
+                    depth += 1
+                elif char in "])":
+                    depth -= 1
+                elif char == "," and depth == 0:
+                    if current.strip():
+                        params.append(current.strip())
+                    current = ""
+                    continue
+                current += char
+            if current.strip():
+                params.append(current.strip())
+            for param in params:
+                # Parse: name: type = default
+                # Handle cases like: client: [Client](xdk.md#xdk.Client)
+                param_match = re.match(
+                    r"(\w+)(?:\s*:\s*([^=]+))?(?:\s*=\s*(.+))?$", param.strip()
+                )
+                if param_match:
+                    param_name = param_match.group(1)
+                    param_type_raw = (
+                        param_match.group(2).strip() if param_match.group(2) else "Any"
+                    )
+                    param_default = (
+                        param_match.group(3).strip() if param_match.group(3) else None
+                    )
+                    # Clean type - handle markdown links first
+                    # Pattern: [Type](path#anchor) -> extract just "Type"
+                    link_match = re.search(r"\[([^\]]+)\]\(([^\)]+)\)", param_type_raw)
+                    if link_match:
+                        param_type = link_match.group(1)  # Use just the link text
+                    else:
+                        # No link, use the raw type but clean it
+                        param_type = param_type_raw
+                        # Remove file references and anchors
+                        param_type = re.sub(r"[a-z_]+\.(md|py)#[^\s]*", "", param_type)
+                        param_type = re.sub(r"#[^\s]*", "", param_type)
+                        # Remove incomplete link patterns like "Client]("
+                        param_type = re.sub(r"\]\([^\)]*$", "", param_type)
+                        param_type = re.sub(r"\]\([^\)]*\)", "", param_type)
+                    # Clean up the type string
+                    param_type = param_type.replace("|", " or ").strip()
+                    # Remove any trailing/leading brackets and parentheses
+                    param_type = re.sub(r"^[\[\(]+", "", param_type)
+                    param_type = re.sub(r"[\]\)]+$", "", param_type)
+                    # Remove any remaining incomplete patterns
+                    param_type = re.sub(r"\]\(.*$", "", param_type)
+                    # Escape angle brackets for MDX
+                    param_type = param_type.replace("<", "&lt;").replace(">", "&gt;")
+                    # Clean up extra spaces
+                    param_type = re.sub(r"\s+", " ", param_type).strip()
+                    # If type is empty or just brackets, default to Any
+                    if not param_type or param_type in ["[", "]", "()", "(", ")", "]("]:
+                        param_type = "Any"
+                    # Find param description
+                    param_desc_match = re.search(
+                        rf":param\s+{param_name}:\s*([^\n]+)", method_body
+                    )
+                    param_desc = (
+                        param_desc_match.group(1).strip() if param_desc_match else ""
+                    )
+                    # Build ParamField - use path instead of name
+                    # For Python methods, parameters are function arguments
+                    # Use "path" location for most parameters, or "body" if it's clearly a request body
+                    param_location = (
+                        "body"
+                        if param_name.lower() in ["body", "data", "payload", "request"]
+                        else "path"
+                    )
+                    param_field = f'<ParamField path="{param_location}.{param_name}" type="{param_type}"'
+                    if param_default:
+                        # Escape default value
+                        param_default_clean = (
+                            param_default.replace('"', "&quot;")
+                            .replace("<", "&lt;")
+                            .replace(">", "&gt;")
+                        )
+                        param_field += f' default="{param_default_clean}"'
+                    param_field += ">"
+                    if param_desc:
+                        param_field += f"\n{param_desc}\n"
+                    param_field += "</ParamField>"
+                    param_fields.append(param_field)
+        # Build new method format
+        new_method = f"### `{method_name}`\n\n"
+        if description:
+            new_method += f"{description}\n\n"
+        if param_fields:
+            new_method += "#### Parameters\n\n"
+            new_method += "\n\n".join(param_fields) + "\n\n"
+        if return_type:
+            # Extract return description
+            return_desc_match = re.search(r":param\s+Returns?:\s*([^\n]+)", method_body)
+            return_desc = (
+                return_desc_match.group(1).strip() if return_desc_match else ""
+            )
+            # Clean return type - handle markdown links
+            return_type_clean = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", return_type)
+            return_type_clean = re.sub(
+                r"[a-z_]+\.(md|py)#[^\s]+", "", return_type_clean
+            )
+            return_type_clean = return_type_clean.replace("[", "").replace("]", "")
+            return_type_clean = return_type_clean.replace("<", "&lt;").replace(
+                ">", "&gt;"
+            )
+            return_type_clean = re.sub(
+                r":param\s+\w+:\s*", "", return_type_clean
+            ).strip()
+            return_type_clean = re.sub(r"\s+", " ", return_type_clean).strip()
+            new_method += "#### Returns\n\n"
+            new_method += f"`{return_type_clean}`"
+            if return_desc and return_desc != return_type_clean:
+                new_method += f" - {return_desc}"
+            new_method += "\n\n"
+        return new_method
+
+    # Convert method signatures to use ParamField components
+    # Match: ### method_name(params) → ReturnType
+
+
+    def process_all_methods(text):
+        # Find all method definitions
+        method_pattern = r"###\s+`?([^\n(]+)`?\s*\(([^)]*)\)(?:\s*→\s*([^\n]+))?"
+        methods = list(re.finditer(method_pattern, text, re.MULTILINE))
+        if not methods:
+            return text
+        # Build result by processing each method and replacing its entire section
+        result_parts = []
+        last_pos = 0
+        for i, match in enumerate(methods):
+            # Add content before this method
+            result_parts.append(text[last_pos : match.start()])
+            # Find where this method's body ends (next method or end of content)
+            method_start = match.start()
+            if i + 1 < len(methods):
+                next_method_start = methods[i + 1].start()
+            else:
+                next_method_start = len(text)
+            # Get the full method section to replace
+            method_section = text[method_start:next_method_start]
+            # Convert this method
+            converted = convert_method(match)
+            # Remove the old method content from the section
+            result_parts.append(converted)
+            last_pos = next_method_start
+        # Add remaining content
+        result_parts.append(text[last_pos:])
+        return "".join(result_parts)
+
+    content = process_all_methods(content)
+    # Clean up any remaining :param lines that weren't converted
+    content = re.sub(r":param\s+(\w+):\s*([^\n]+)", r"**`\1`** - \2", content)
+    content = re.sub(r":param\s+Returns?:\s*([^\n]+)", r"**Returns:** \1", content)
+    # Remove duplicate return descriptions
+    content = re.sub(
+        r"(#### Returns\n\n`[^\n]+`[^\n]+\n\n)(\*\*`[^\n]+\*\*[^\n]+\n)+",
+        r"\1",
+        content,
+    )
+    # Remove duplicate method descriptions
+    content = re.sub(r"(### `[^\n]+`\n\n[^\n]+\n\n[^\n]+\n\n)(\1)", r"\1", content)
+    # Clean up any remaining old format parameter lines after ParamField sections
+    content = re.sub(r"(</ParamField>\n\n)(\*\*`[^\n]+\*\*[^\n]+\n)+", r"\1", content)
+    # Remove duplicate "Returns:" text in return sections
+    content = re.sub(
+        r"(#### Returns\n\n`[^\n]+`)\s*-\s*\*\*`[^\n]+\*\*\s*-\s*([^\n]+)",
+        r"\1 - \2",
+        content,
+    )
+    # Remove duplicate class definitions that appear after the main class header
+    # Pattern: ### `class xdk.module.ClassName` followed by description and parameters
+    # Find the main class header (should be ## ClassName)
+    main_class_match = re.search(
+        r"##\s+([A-Z][a-zA-Z0-9_]+Client|Client|Paginator|OAuth2PKCEAuth|BaseModel)",
+        content,
+    )
+    if main_class_match:
+        # Everything after the main class header should not have duplicate class definitions
+        before_main = content[: main_class_match.end()]
+        after_main = content[main_class_match.end() :]
+        # Remove any class definitions from after_main
+        after_main = re.sub(
+            r"###\s+`?class\s+xdk\.[^\n]+\n\n[^\n]+\n\n(?:####\s+Parameters[^\n]+\n\n<ParamField[^>]+>\s*</ParamField>\s*\n)?",
+            "",
+            after_main,
+        )
+        content = before_main + after_main
+    # Remove duplicate parameter sections (#### Parameters appearing twice in a row)
+    content = re.sub(
+        r"(#### Parameters\n\n<ParamField[^>]+>\s*</ParamField>\s*\n)\1", r"\1", content
+    )
+    return content
 
 
     def convert_method(match):
@@ -880,6 +1338,245 @@ def process_markdown_content(
         flags=re.MULTILINE,
     )
     return content
+    def fix_link(match):
+        text = match.group(1)
+        raw_link_path = match.group(2)
+        hash_part = match.group(3) or ""
+        # Skip absolute URLs
+        if re.match(r"^(?:https?:|mailto:|tel:)", raw_link_path, re.I):
+            return match.group(0)
+        link_path = raw_link_path.replace(".md", "").replace(".rst", "")
+        current_dir = str(Path(current_file_path).parent) if current_file_path else ""
+        # Normalize path
+        if current_dir:
+            joined = Path(current_dir) / link_path
+            target_path = str(joined).replace("\\", "/").replace("docs/", "")
+        else:
+            target_path = link_path.replace("\\", "/").replace("docs/", "")
+        # Use known target if available
+        base_name = Path(target_path).stem
+        if base_name in known_targets and "/" not in target_path:
+            target_path = f"{known_targets[base_name]}/{base_name}"
+        return f"[{text}](/xdks/python/reference/{target_path}{hash_part})"
+    content = re.sub(
+        r"\[([^\]]+)\]\(([^)#]+?)(?:\.(?:md|rst))?(#[^)]+)?\)", fix_link, content
+    )
+    # Fix method signatures
+    content = re.sub(r"### (.*?)\(", r"### `\1`(", content)
+    # Add proper spacing
+    content = re.sub(r"\n\n\n+", "\n\n", content)
+    # Remove first H1 header (frontmatter title will be used)
+    content = re.sub(r"^\s*#\s+[^\n]+\n+", "", content)
+    # Escape generic type angle brackets (but preserve component tags)
+    # Simple approach: escape angle brackets, then fix Badge tags
+    content = re.sub(
+        r"\b([A-Z][A-Za-z0-9_]*)<([^>\n]+)>",
+        lambda m: f"{m.group(1)}&lt;{m.group(2).replace('<', '&lt;').replace('>', '&gt;')}&gt;",
+        content,
+    )
+    # Fix any escaped Badge tags (they shouldn't have angle brackets anyway)
+    content = content.replace("&lt;/Badge&gt;", "</Badge>")
+    content = content.replace("Class&lt;/Badge&gt;", "Class</Badge>")
+    content = content.replace("BaseModel&lt;/Badge&gt;", "BaseModel</Badge>")
+    # Remove Table of Contents blocks
+    content = re.sub(
+        r"(^##\s+Table of contents\n[\s\S]*?)(?=^##\s+|^#\s+|\Z)",
+        "",
+        content,
+        flags=re.MULTILINE | re.IGNORECASE,
+    )
+    # Fix asterisks around type annotations that break MDX parsing
+    # Pattern: #### field *: Type* *= value* -> #### field : Type = value
+    # This handles cases like: model_config *: ClassVar[ConfigDict]* *= {'extra': 'allow', ...}*
+    # Match: field *: Type* *= value* (where value can contain quotes, commas, etc.)
+    # Use a more specific pattern that includes the header marker
+    content = re.sub(
+        r"(####\s+\w+)\s+\*\s*:\s*([^*]+?)\s*\*\s*\*\s*=\s*([^\n]+?)\s*\*",
+        r"\1: \2 = \3",
+        content,
+        flags=re.MULTILINE,
+    )
+    # Fix asterisks around type annotations without equals (just type)
+    # Pattern: field *: Type* -> field : Type
+    content = re.sub(
+        r"(\w+)\s+\*\s*:\s*([^*\n]+?)\s*\*", r"\1: \2", content, flags=re.MULTILINE
+    )
+    # Fix remaining asterisks around equals signs (standalone)
+    # Pattern: *= value* -> = value
+    content = re.sub(r"\*\s*=\s*([^\n]+?)\s*\*", r"= \1", content, flags=re.MULTILINE)
+    # Fix asterisks around class/function names in headers
+    # Pattern: ### *class* name -> ### class name
+    content = re.sub(r"###\s+\*\s*(\w+)\s*\*\s+", r"### \1 ", content)
+    # Convert property headers with type annotations to Mintlify components
+    # This must happen AFTER asterisk removal
+    # Pattern: #### field: Type = value\n\nDescription
+    # Convert to: <ResponseField name="field" type="Type">Description</ResponseField>
+    def convert_property_header(match):
+        field_name = match.group(1)
+        type_and_default = match.group(2).strip()
+        description = match.group(3).strip() if match.group(3) else ""
+        # Split type and default value
+        # Format: ClassVar[ConfigDict] = {'extra': 'allow', ...}
+        type_match = re.match(r"([^=]+?)(?:\s*=\s*(.+))?$", type_and_default)
+        if type_match:
+            type_annotation = type_match.group(1).strip()
+            default_value = type_match.group(2).strip() if type_match.group(2) else None
+        else:
+            type_annotation = type_and_default
+            default_value = None
+        # Clean up type annotation - remove ClassVar, brackets, etc.
+        # ClassVar[ConfigDict] -> ConfigDict
+        type_clean = re.sub(r"ClassVar\[([^\]]+)\]", r"\1", type_annotation)
+        # Remove any remaining brackets for display
+        type_clean = type_clean.replace("[", "").replace("]", "").strip()
+        # Escape type for MDX
+        type_clean = type_clean.replace("<", "&lt;").replace(">", "&gt;")
+        # Build the component
+        component = f'<ResponseField name="{field_name}" type="{type_clean}"'
+        if default_value:
+            # Escape default value for MDX - use code block for complex values
+            if "{" in default_value or "[" in default_value:
+                # For complex values, put in description instead
+                description = f"Default: `{default_value}`\n\n{description}".strip()
+            else:
+                component += f' default="{default_value}"'
+        component += ">"
+        if description:
+            component += f"\n{description}\n"
+        component += "</ResponseField>"
+        return component
+    # Match: #### field: Type = value\n\nDescription
+    # Match the entire header line, then blank line, then description
+    content = re.sub(
+        r"####\s+(\w+)\s*:\s*([^\n]+?)\s*\n\s*\n([^\n]+(?:\n(?!####)[^\n]+)*)?",
+        convert_property_header,
+        content,
+        flags=re.MULTILINE,
+    )
+    return content
+
+
+    def fix_link(match):
+        text = match.group(1)
+        raw_link_path = match.group(2)
+        hash_part = match.group(3) or ""
+        # Skip absolute URLs
+        if re.match(r"^(?:https?:|mailto:|tel:)", raw_link_path, re.I):
+            return match.group(0)
+        link_path = raw_link_path.replace(".md", "").replace(".rst", "")
+        current_dir = str(Path(current_file_path).parent) if current_file_path else ""
+        # Normalize path
+        if current_dir:
+            joined = Path(current_dir) / link_path
+            target_path = str(joined).replace("\\", "/").replace("docs/", "")
+        else:
+            target_path = link_path.replace("\\", "/").replace("docs/", "")
+        # Use known target if available
+        base_name = Path(target_path).stem
+        if base_name in known_targets and "/" not in target_path:
+            target_path = f"{known_targets[base_name]}/{base_name}"
+        return f"[{text}](/xdks/python/reference/{target_path}{hash_part})"
+
+    content = re.sub(
+        r"\[([^\]]+)\]\(([^)#]+?)(?:\.(?:md|rst))?(#[^)]+)?\)", fix_link, content
+    )
+    # Fix method signatures
+    content = re.sub(r"### (.*?)\(", r"### `\1`(", content)
+    # Add proper spacing
+    content = re.sub(r"\n\n\n+", "\n\n", content)
+    # Remove first H1 header (frontmatter title will be used)
+    content = re.sub(r"^\s*#\s+[^\n]+\n+", "", content)
+    # Escape generic type angle brackets (but preserve component tags)
+    # Simple approach: escape angle brackets, then fix Badge tags
+    content = re.sub(
+        r"\b([A-Z][A-Za-z0-9_]*)<([^>\n]+)>",
+        lambda m: f"{m.group(1)}&lt;{m.group(2).replace('<', '&lt;').replace('>', '&gt;')}&gt;",
+        content,
+    )
+    # Fix any escaped Badge tags (they shouldn't have angle brackets anyway)
+    content = content.replace("&lt;/Badge&gt;", "</Badge>")
+    content = content.replace("Class&lt;/Badge&gt;", "Class</Badge>")
+    content = content.replace("BaseModel&lt;/Badge&gt;", "BaseModel</Badge>")
+    # Remove Table of Contents blocks
+    content = re.sub(
+        r"(^##\s+Table of contents\n[\s\S]*?)(?=^##\s+|^#\s+|\Z)",
+        "",
+        content,
+        flags=re.MULTILINE | re.IGNORECASE,
+    )
+    # Fix asterisks around type annotations that break MDX parsing
+    # Pattern: #### field *: Type* *= value* -> #### field : Type = value
+    # This handles cases like: model_config *: ClassVar[ConfigDict]* *= {'extra': 'allow', ...}*
+    # Match: field *: Type* *= value* (where value can contain quotes, commas, etc.)
+    # Use a more specific pattern that includes the header marker
+    content = re.sub(
+        r"(####\s+\w+)\s+\*\s*:\s*([^*]+?)\s*\*\s*\*\s*=\s*([^\n]+?)\s*\*",
+        r"\1: \2 = \3",
+        content,
+        flags=re.MULTILINE,
+    )
+    # Fix asterisks around type annotations without equals (just type)
+    # Pattern: field *: Type* -> field : Type
+    content = re.sub(
+        r"(\w+)\s+\*\s*:\s*([^*\n]+?)\s*\*", r"\1: \2", content, flags=re.MULTILINE
+    )
+    # Fix remaining asterisks around equals signs (standalone)
+    # Pattern: *= value* -> = value
+    content = re.sub(r"\*\s*=\s*([^\n]+?)\s*\*", r"= \1", content, flags=re.MULTILINE)
+    # Fix asterisks around class/function names in headers
+    # Pattern: ### *class* name -> ### class name
+    content = re.sub(r"###\s+\*\s*(\w+)\s*\*\s+", r"### \1 ", content)
+
+    # Convert property headers with type annotations to Mintlify components
+    # This must happen AFTER asterisk removal
+    # Pattern: #### field: Type = value\n\nDescription
+    # Convert to: <ResponseField name="field" type="Type">Description</ResponseField>
+
+
+    def convert_property_header(match):
+        field_name = match.group(1)
+        type_and_default = match.group(2).strip()
+        description = match.group(3).strip() if match.group(3) else ""
+        # Split type and default value
+        # Format: ClassVar[ConfigDict] = {'extra': 'allow', ...}
+        type_match = re.match(r"([^=]+?)(?:\s*=\s*(.+))?$", type_and_default)
+        if type_match:
+            type_annotation = type_match.group(1).strip()
+            default_value = type_match.group(2).strip() if type_match.group(2) else None
+        else:
+            type_annotation = type_and_default
+            default_value = None
+        # Clean up type annotation - remove ClassVar, brackets, etc.
+        # ClassVar[ConfigDict] -> ConfigDict
+        type_clean = re.sub(r"ClassVar\[([^\]]+)\]", r"\1", type_annotation)
+        # Remove any remaining brackets for display
+        type_clean = type_clean.replace("[", "").replace("]", "").strip()
+        # Escape type for MDX
+        type_clean = type_clean.replace("<", "&lt;").replace(">", "&gt;")
+        # Build the component
+        component = f'<ResponseField name="{field_name}" type="{type_clean}"'
+        if default_value:
+            # Escape default value for MDX - use code block for complex values
+            if "{" in default_value or "[" in default_value:
+                # For complex values, put in description instead
+                description = f"Default: `{default_value}`\n\n{description}".strip()
+            else:
+                component += f' default="{default_value}"'
+        component += ">"
+        if description:
+            component += f"\n{description}\n"
+        component += "</ResponseField>"
+        return component
+
+    # Match: #### field: Type = value\n\nDescription
+    # Match the entire header line, then blank line, then description
+    content = re.sub(
+        r"####\s+(\w+)\s*:\s*([^\n]+?)\s*\n\s*\n([^\n]+(?:\n(?!####)[^\n]+)*)?",
+        convert_property_header,
+        content,
+        flags=re.MULTILINE,
+    )
+    return content
 
 
     def fix_link(match):
@@ -1141,6 +1838,7 @@ The Python XDK (X Developer Kit) is our official client library for interacting 
 - 🎯 **Comprehensive Coverage**: Supports all X API v2 endpoints including such as search, timelines, filtered-stream and more.
 **Version Compatibility**: Python 3.8+. Tested on CPython and PyPy.
 **License**: [MIT License](https://github.com/xdevplatform/xdk/blob/main/LICENSE)
+For detailed code examples using the Python XDK, check out our [code samples GitHub repo](https://github.com/xdevplatform/samples/tree/main/python).
 """
         (output_dir / "xdks" / "python" / "overview.mdx").write_text(overview_content)
         # Install page
@@ -1181,6 +1879,7 @@ import xdk
 print(xdk.__version__)  # Should print the XDK version
 ```
 **Note:** Since the XDK is generated using the OpenAPI spec, always check the [X API changelog](https://docs.x.com/changelog) and XDK release notes in the repo for any changes.
+For detailed code examples using the Python XDK, check out our [code samples GitHub repo](https://github.com/xdevplatform/samples/tree/main/python).
 """
         (output_dir / "xdks" / "python" / "install.mdx").write_text(install_content)
         # Quickstart page
@@ -1205,12 +1904,17 @@ from xdk import Client
 # Replace with your actual Bearer Token
 client = Client(bearer_token="YOUR_BEARER_TOKEN_HERE")
 # Fetch recent Posts mentioning "api"
-response = client.posts.search_recent(query="api", max_results=10)
-# Print the first Post's text
-if response.data:
-    print(f"Latest Post: {response.data[0]['text']}")
-else:
-    print("No Posts found.")
+# search_recent returns an Iterator, so iterate over it
+for page in client.posts.search_recent(query="api", max_results=10):
+    if page.data and len(page.data) > 0:
+        # Access first Post - Pydantic models support both attribute and dict access
+        first_post = page.data[0]
+        post_text = first_post.text if hasattr(first_post, 'text') else first_post.get('text', '')
+        print(f"Latest Post: {post_text}")
+        break
+    else:
+        print("No Posts found.")
+        break
 ```
 Run it:
 ```bash
@@ -1222,9 +1926,10 @@ Latest Post: Exciting updates on XDK Python SDK!
 ```
 **Troubleshooting**: If you get a 401 error, double-check your Bearer Token. For rate limits (429), wait and retry.
 ## Next Steps
-- Explore [Authentication](/xdks/python/authentication) to understand how to use Bearer Token (app-only) auth, OAuth 2.0 with PKCE (user context), and OAuth 1.0.
+- Explore [Authentication](/xdks/python/authentication) to understand how to use Bearer Token (app-only) auth, OAuth 2.0 with PKCE (user context), and OAuth 1.0a (legacy user context).
 - Learn about [Pagination](/xdks/python/pagination) for use-cases where you want large number of results returned without worrying about making multiple API calls.
 - Dive into [Streaming](/xdks/python/streaming) to learn how to work with real-time data.
+For detailed code examples using the Python XDK, check out our [code samples GitHub repo](https://github.com/xdevplatform/samples/tree/main/python).
 """
         (output_dir / "xdks" / "python" / "quickstart.mdx").write_text(
             quickstart_content
@@ -1237,11 +1942,10 @@ sidebarTitle: Authentication
 The X API requires authentication for all endpoints. The XDK supports three authentication methods:
 1. Bearer Token (app-only)
 2. OAuth 2.0 with PKCE
-3. OAuth 1.0a User Context
+3. OAuth 1.0a (User Context)
 - **Bearer Token**: Use this for read-only access for endpoints that support app-auth (e.g., searching Post's, streaming endpoints).
 - **OAuth 2.0 PKCE**: Secure authentication for scope-based, user-authorized access (e.g. getting authenticated user's Post non_public metrics)
-- **OAuth 1.0a**: Legacy auth for full read/write access, including DMs and media uploads.
-**Note**: We recommend developers move away from OAuth 1.0 and use OAuth 2.0 for user-authorized access.
+- **OAuth 1.0a**: Legacy authentication for user-specific operations (e.g., posting on behalf of a user, managing lists)
 Obtain credentials from the [X Developer Portal](https://developer.x.com/en/portal/dashboard). You'll need an approved developer account and an app with appropriate permissions (e.g., Read + Write).
 ## Creating a Client
 All authentication flows create a `Client` instance:
@@ -1259,8 +1963,13 @@ client = Client(bearer_token="XXXXX")
 ```
 **Usage**:
 ```python
-response = client.posts.search_recent(query="python", max_results=10)
-print(response.data[0]['text'])  # Access first Post
+# search_recent returns an Iterator, so iterate over it
+for page in client.posts.search_recent(query="python", max_results=10):
+    if page.data and len(page.data) > 0:
+        first_post = page.data[0]
+        post_text = first_post.text if hasattr(first_post, 'text') else first_post.get('text', '')
+        print(post_text)  # Access first Post
+        break
 ```
 ### 2. OAuth 2.0 with PKCE (User Context)
 This example shows how to use OAuth 2.0 with Proof Key for Code Exchange (PKCE). Use this for user-specific access (e.g. posting on behalf of a user), uploading media for a user etc.).
@@ -1280,7 +1989,7 @@ auth = OAuth2PKCEAuth(
     scope="tweet.read users.read offline.access"
 )
 # Step 2: Get authorization URL
-auth_url, state = auth.get_authorization_url()
+auth_url = auth.get_authorization_url()
 print(f"Visit this URL to authorize: {auth_url}")
 webbrowser.open(auth_url)
 # Step 3: Handle callback (in a real app, use a web framework like Flask)
@@ -1305,26 +2014,63 @@ tokens = auth.refresh_token()
 client = Client(bearer_token=tokens["access_token"])
 # Or pass the full token dict: client = Client(token=tokens)
 ```
-### 3. OAuth 1.0a User Context
-For legacy endpoints that require OAuth 1.0 support.
+### 3. OAuth 1.0a (User Context)
+For legacy applications or specific use cases that require OAuth 1.0a authentication:
 **Steps**:
-1. Generate Consumer Key/Secret and Access Token/Secret via Developer Portal.
-2. Pass it when initializing the client.
-**Example**:
+1. In the Developer Portal, get your API Key and API Secret.
+2. If you already have access tokens, use them directly. Otherwise, complete the OAuth 1.0a flow to obtain them.
+3. Create an OAuth1 instance and pass it to the Client.
+**Example** (with existing access tokens):
 ```python
-from xdk.auth import OAuth1User
-auth = OAuth1User(
-    consumer_key="your_consumer_key",
-    consumer_secret="your_consumer_secret",
-    access_token="your_access_token",
-    access_token_secret="your_access_token_secret"
+from xdk import Client
+from xdk.oauth1_auth import OAuth1
+# Step 1: Create OAuth1 instance with credentials
+oauth1 = OAuth1(
+    api_key="YOUR_API_KEY",
+    api_secret="YOUR_API_SECRET",
+    callback="http://localhost:8080/callback",
+    access_token="YOUR_ACCESS_TOKEN",
+    access_token_secret="YOUR_ACCESS_TOKEN_SECRET"
 )
-client = Client(auth=auth)
+# Step 2: Create client with OAuth1
+client = Client(auth=oauth1)
+# Step 3: Use the client
+response = client.users.get_me()
+me = response.data
+print(me)
+```
+**Example** (complete OAuth 1.0a flow):
+```python
+from xdk import Client
+from xdk.oauth1_auth import OAuth1
+import webbrowser
+# Step 1: Create OAuth1 instance
+oauth1 = OAuth1(
+    api_key="YOUR_API_KEY",
+    api_secret="YOUR_API_SECRET",
+    callback="http://localhost:8080/callback"
+)
+# Step 2: Get request token
+request_token = oauth1.get_request_token()
+# Step 3: Get authorization URL
+auth_url = oauth1.get_authorization_url(login_with_x=False)
+print(f"Visit this URL to authorize: {auth_url}")
+webbrowser.open(auth_url)
+# Step 4: User authorizes and you receive oauth_verifier
+# In a real app, handle this via callback URL
+oauth_verifier = input("Enter the OAuth verifier from the callback: ")
+# Step 5: Exchange for access token
+access_token = oauth1.get_access_token(oauth_verifier)
+# Step 6: Create client
+client = Client(auth=oauth1)
+# Now you can use the client
+response = client.users.get_me()
 ```
 **Note**:
 - Never hardcode secrets in production; use environment variables or secret managers (e.g., `os.getenv("X_BEARER_TOKEN")`).
 - For PKCE, ensure HTTPS for redirect URIs in production.
 - The SDK validates tokens and raises `xdk.AuthenticationError` on failures.
+For detailed code examples using the Python XDK, check out our [code samples GitHub repo](https://github.com/xdevplatform/samples/tree/main/python).
 """
         (output_dir / "xdks" / "python" / "authentication.mdx").write_text(auth_content)
         # Pagination page
@@ -1348,7 +2094,7 @@ all_posts = []
 for page in client.posts.search_recent(
     query="python",
     max_results=100,  # Per page
-    tweetfields=["created_at", "author_id"]  # Optional expansions
+    tweet_fields=["created_at", "author_id"]  # Optional expansions
 ):
     all_posts.extend(page.data)
     print(f"Fetched {len(page.data)} Posts (total: {len(all_posts)})")
@@ -1360,25 +2106,33 @@ print(f"Total tweets: {len(all_posts)}")
 ## Manual Pagination
 If you require control over the results for some custom logic (e.g. processing page-by-page), you can still use the `next_token` and do the pagination manually as shown below:
 ```python
-response = client.posts.search_recent(
+# Get first page - search_recent returns an Iterator
+first_page = next(client.posts.search_recent(
     query="xdk python sdk",
     max_results=100,
     pagination_token=None  # First page
-)
-print(f"First page: {len(response.data)} Posts")
-next_token = response.meta.next_token
+))
+print(f"First page: {len(first_page.data) if first_page.data else 0} Posts")
+# Extract next_token from meta
+next_token = None
+if hasattr(first_page, 'meta') and first_page.meta:
+    if hasattr(first_page.meta, 'next_token'):
+        next_token = first_page.meta.next_token
+    elif isinstance(first_page.meta, dict):
+        next_token = first_page.meta.get('next_token')
 if next_token:
-    next_response = client.posts.search_recent(
+    second_page = next(client.posts.search_recent(
         query="xdk python sdk",
         max_results=100,
         pagination_token=next_token
-    )
-    print(f"Second page: {len(next_response.data)} Posts")
+    ))
+    print(f"Second page: {len(second_page.data) if second_page.data else 0} Posts")
 ```
 **Tips**:
 - Always specify `max_results` to optimize (default varies by endpoint).
 - Monitor `meta.result_count` for debugging.
 - For very large queries, consider async iteration to avoid blocking.
+For detailed code examples using the Python XDK, check out our [code samples GitHub repo](https://github.com/xdevplatform/samples/tree/main/python).
 """
         (output_dir / "xdks" / "python" / "pagination.mdx").write_text(
             pagination_content
@@ -1397,10 +2151,11 @@ from xdk import Client
 client = Client(bearer_token="your_bearer_token")
 # Stream posts (make sure you have rules set up first)
 for post_response in client.stream.posts():
-    data = post_response.model_dump()
+    data = post_response.model_dump() if hasattr(post_response, 'model_dump') else dict(post_response)
     if 'data' in data and data['data']:
         tweet = data['data']
-        print(f"Post: {tweet.get('text', '')}")
+        post_text = tweet.get('text', '') if isinstance(tweet, dict) else (tweet.text if hasattr(tweet, 'text') else '')
+        print(f"Post: {post_text}")
 ```
 ### Async
 ```python
@@ -1459,16 +2214,23 @@ response = client.stream.update_rules(body=request_body)
 ```
 **Listing Rules**:
 ```python
-response = client.stream.get_rules()
-# Print rules
-for rule in response.data:
-    print(f"ID: {rule.id}, Value: {rule.value}, Tag: {rule.tag}")
+# get_rules returns an Iterator, so iterate over it
+for page in client.stream.get_rules():
+    if page.data:
+        for rule in page.data:
+            # Access rule attributes - Pydantic models support both attribute and dict access
+            rule_id = rule.id if hasattr(rule, 'id') else rule.get('id', '')
+            rule_value = rule.value if hasattr(rule, 'value') else rule.get('value', '')
+            rule_tag = rule.tag if hasattr(rule, 'tag') else rule.get('tag', '')
+            print(f"ID: {rule_id}, Value: {rule_value}, Tag: {rule_tag}")
+    break  # Remove break to get all pages
 ```
 For full rule syntax, see [X Streaming Rules Docs](https://developer.x.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule).
 ## Troubleshooting
 - **403 Forbidden**: Invalid auth or insufficient permissions.
 - **420 Enhance Your Calm**: Rate limited; wait and retry.
 - **No Data**: Check rules with `get_rules()`; ensure matching Posts exist.
+For detailed code examples using the Python XDK, check out our [code samples GitHub repo](https://github.com/xdevplatform/samples/tree/main/python).
 For more examples and API reference, see the inline docstrings (e.g., `help(client.tweets.search_recent)`) or the generated stubs in the source. Contribute feedback via the [GitHub repo](https://github.com/xdevplatform/xdk/tree/main/xdk/python).
 """
         (output_dir / "xdks" / "python" / "streaming.mdx").write_text(streaming_content)
@@ -1702,6 +2464,469 @@ sidebarTitle: "{modules_title}"
     except Exception as error:
         print(f"❌ Error processing documentation: {error}")
         import traceback
+        traceback.print_exc()
+        sys.exit(1)
+        def list_files_no_ext(directory):
+            try:
+                return [
+                    f"xdks/python/reference/{directory.name}/{f.stem}"
+                    for f in directory.glob("*.mdx")
+                ]
+            except:
+                return []
+        classes_pages = list_files_no_ext(classes_dir) if classes_dir.exists() else []
+        modules_pages = list_files_no_ext(modules_dir) if modules_dir.exists() else []
+        # Group pages by module prefix
+        MODULE_PREFIXES = [
+            "AccountActivity",
+            "Activity",
+            "Communities",
+            "CommunityNotes",
+            "Compliance",
+            "Connections",
+            "DirectMessages",
+            "General",
+            "Lists",
+            "Media",
+            "Posts",
+            "Spaces",
+            "Stream",
+            "Trends",
+            "Usage",
+            "Users",
+            "Webhooks",
+            "Client",
+            "Paginator",
+            "OAuth2",
+        ]
+        def group_pages(pages, kind):
+            buckets = {}
+            for p in pages:
+                name = Path(p).stem
+                group = None
+                for pref in MODULE_PREFIXES:
+                    if name.startswith(pref):
+                        group = pref
+                        break
+                if not group:
+                    if kind == "classes":
+                        if name.endswith("Client"):
+                            group = "Clients"
+                        elif "Stream" in name:
+                            group = "Streaming"
+                        elif "Paginator" in name:
+                            group = "Pagination"
+                        else:
+                            group = "Core"
+                    else:
+                        group = "Misc"
+                if group not in buckets:
+                    buckets[group] = []
+                buckets[group].append(p)
+            # Sort pages within groups
+            for group in buckets:
+                buckets[group].sort()
+            return [{"group": k, "pages": v} for k, v in sorted(buckets.items())]
+        class_groups = group_pages(classes_pages, "classes")
+        module_groups = group_pages(modules_pages, "modules")
+        # Process modules.md to create accordion structure
+        modules_md_path = docs_dir / "modules.md"
+        if modules_md_path.exists():
+            modules_raw = modules_md_path.read_text(encoding="utf-8")
+            # Extract title
+            title_match = re.search(r"^#\s+(.+)$", modules_raw, re.MULTILINE)
+            modules_title = title_match.group(1).strip() if title_match else "Modules"
+            # Parse the modules structure and convert to accordion
+            # Instead of parsing modules.md, use the actual reference files we have
+            # Group by package name from actual files
+            packages = {}
+            # Get all reference files
+            ref_root = output_dir / "xdks" / "python" / "reference"
+            all_ref_files = [
+                f for f in ref_root.glob("*.mdx") if f.stem not in ["modules", "index"]
+            ]
+            # Group files by package
+            for ref_file in all_ref_files:
+                name = ref_file.stem
+                # Extract package name
+                if ".client" in name:
+                    package_name = name.replace("xdk.", "").replace(".client", "")
+                    module_type = "Client"
+                elif ".models" in name:
+                    package_name = name.replace("xdk.", "").replace(".models", "")
+                    module_type = "Models"
+                else:
+                    # Other modules like xdk.client, xdk.paginator
+                    parts = name.replace("xdk.", "").split(".")
+                    package_name = parts[0] if parts else "Core"
+                    module_type = parts[-1].capitalize() if len(parts) > 1 else "Core"
+                # Convert to display name
+                package_display = " ".join(
+                    word.capitalize() for word in package_name.split("_")
+                )
+                if package_display not in packages:
+                    packages[package_display] = []
+                # Add module link
+                packages[package_display].append(
+                    {"name": module_type, "link": f"xdks/python/reference/{name}"}
+                )
+            # Build accordion content
+            package_accordions = []
+            for package_name, modules in sorted(packages.items()):
+                if modules:
+                    module_items = "\n".join(
+                        [
+                            f'  - [{m["name"]}](/{m["link"]})'
+                            for m in sorted(modules, key=lambda x: x["name"])
+                        ]
+                    )
+                    package_accordions.append(
+                        f'  <Accordion title="{package_name}">\n{module_items}\n  </Accordion>'
+                    )
+            # Build final modules content
+            if package_accordions:
+                modules_content = f"""---
+title: "{modules_title}"
+sidebarTitle: "{modules_title}"
+---
+<AccordionGroup>
+<Accordion title="Packages">
+{chr(10).join(package_accordions)}
+</Accordion>
+</AccordionGroup>
+"""
+            else:
+                modules_content = f"""---
+title: "{modules_title}"
+sidebarTitle: "{modules_title}"
+---
+<AccordionGroup>
+<Accordion title="Packages">
+</Accordion>
+</AccordionGroup>
+"""
+            # Write modules.mdx
+            (output_dir / "xdks" / "python" / "reference" / "modules.mdx").write_text(
+                modules_content, encoding="utf-8"
+            )
+        # Get all reference files for navigation
+        ref_root = output_dir / "xdks" / "python" / "reference"
+        all_ref_files = [
+            f
+            for f in ref_root.glob("*.mdx")
+            if f.stem != "modules" and f.stem != "index"
+        ]
+        # Separate into clients, models, and other
+        client_files = [f for f in all_ref_files if f.stem.endswith(".client")]
+        model_files = [f for f in all_ref_files if f.stem.endswith(".models")]
+        other_files = [
+            f
+            for f in all_ref_files
+            if not f.stem.endswith(".client") and not f.stem.endswith(".models")
+        ]
+        # Group by package
+        def group_by_package(files):
+            buckets = {}
+            for f in files:
+                name = f.stem
+                if ".client" in name:
+                    package = name.replace("xdk.", "").replace(".client", "")
+                elif ".models" in name:
+                    package = name.replace("xdk.", "").replace(".models", "")
+                else:
+                    parts = name.replace("xdk.", "").split(".")
+                    package = parts[0] if parts else "Core"
+                # Convert to display name
+                package_display = " ".join(
+                    word.capitalize() for word in package.split("_")
+                )
+                if package_display not in buckets:
+                    buckets[package_display] = []
+                buckets[package_display].append(f"xdks/python/reference/{f.stem}")
+            # Sort pages within groups
+            for group in buckets:
+                buckets[group].sort()
+            return [{"group": k, "pages": v} for k, v in sorted(buckets.items())]
+        client_groups = group_by_package(client_files)
+        model_groups = group_by_package(model_files)
+        other_groups = group_by_package(other_files)
+        # Generate navigation JSON
+        # Build navigation structure with packages and modules in sidebar
+        api_ref_pages = ["xdks/python/reference/modules"]
+        # Add client groups
+        if client_groups:
+            api_ref_pages.append({"group": "Clients", "pages": client_groups})
+        # Add model groups
+        if model_groups:
+            api_ref_pages.append({"group": "Models", "pages": model_groups})
+        # Add other groups
+        if other_groups:
+            api_ref_pages.append({"group": "Core", "pages": other_groups})
+        python_sdk_navigation = {
+            "tab": "Python SDK",
+            "hidden": True,
+            "pages": [
+                "xdks/python/overview",
+                "xdks/python/install",
+                "xdks/python/quickstart",
+                "xdks/python/authentication",
+                "xdks/python/pagination",
+                "xdks/python/streaming",
+                {"group": "API Reference", "pages": api_ref_pages},
+            ],
+        }
+        # Write navigation JSON
+        nav_json_path = output_dir / "python-sdk-navigation.json"
+        nav_json_path.write_text(json.dumps(python_sdk_navigation, indent=2))
+        print("✅ Python SDK documentation processed successfully!")
+        print(f"📁 Output directory: {output_dir}/")
+        print(f"📊 Processed {len(processed_files)} files")
+        print("\n🚀 Integration steps:")
+        print("1. Copy the 'xdks/' folder to your existing Mintlify site")
+        print(
+            "2. Add the navigation structure from 'python-sdk-navigation.json' to your mintlify.json"
+        )
+        print("3. Push to your main branch to deploy")
+    except Exception as error:
+        print(f"❌ Error processing documentation: {error}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+        def list_files_no_ext(directory):
+            try:
+                return [
+                    f"xdks/python/reference/{directory.name}/{f.stem}"
+                    for f in directory.glob("*.mdx")
+                ]
+            except:
+                return []
+
+        classes_pages = list_files_no_ext(classes_dir) if classes_dir.exists() else []
+        modules_pages = list_files_no_ext(modules_dir) if modules_dir.exists() else []
+        # Group pages by module prefix
+        MODULE_PREFIXES = [
+            "AccountActivity",
+            "Activity",
+            "Communities",
+            "CommunityNotes",
+            "Compliance",
+            "Connections",
+            "DirectMessages",
+            "General",
+            "Lists",
+            "Media",
+            "Posts",
+            "Spaces",
+            "Stream",
+            "Trends",
+            "Usage",
+            "Users",
+            "Webhooks",
+            "Client",
+            "Paginator",
+            "OAuth2",
+        ]
+
+
+        def group_pages(pages, kind):
+            buckets = {}
+            for p in pages:
+                name = Path(p).stem
+                group = None
+                for pref in MODULE_PREFIXES:
+                    if name.startswith(pref):
+                        group = pref
+                        break
+                if not group:
+                    if kind == "classes":
+                        if name.endswith("Client"):
+                            group = "Clients"
+                        elif "Stream" in name:
+                            group = "Streaming"
+                        elif "Paginator" in name:
+                            group = "Pagination"
+                        else:
+                            group = "Core"
+                    else:
+                        group = "Misc"
+                if group not in buckets:
+                    buckets[group] = []
+                buckets[group].append(p)
+            # Sort pages within groups
+            for group in buckets:
+                buckets[group].sort()
+            return [{"group": k, "pages": v} for k, v in sorted(buckets.items())]
+
+        class_groups = group_pages(classes_pages, "classes")
+        module_groups = group_pages(modules_pages, "modules")
+        # Process modules.md to create accordion structure
+        modules_md_path = docs_dir / "modules.md"
+        if modules_md_path.exists():
+            modules_raw = modules_md_path.read_text(encoding="utf-8")
+            # Extract title
+            title_match = re.search(r"^#\s+(.+)$", modules_raw, re.MULTILINE)
+            modules_title = title_match.group(1).strip() if title_match else "Modules"
+            # Parse the modules structure and convert to accordion
+            # Instead of parsing modules.md, use the actual reference files we have
+            # Group by package name from actual files
+            packages = {}
+            # Get all reference files
+            ref_root = output_dir / "xdks" / "python" / "reference"
+            all_ref_files = [
+                f for f in ref_root.glob("*.mdx") if f.stem not in ["modules", "index"]
+            ]
+            # Group files by package
+            for ref_file in all_ref_files:
+                name = ref_file.stem
+                # Extract package name
+                if ".client" in name:
+                    package_name = name.replace("xdk.", "").replace(".client", "")
+                    module_type = "Client"
+                elif ".models" in name:
+                    package_name = name.replace("xdk.", "").replace(".models", "")
+                    module_type = "Models"
+                else:
+                    # Other modules like xdk.client, xdk.paginator
+                    parts = name.replace("xdk.", "").split(".")
+                    package_name = parts[0] if parts else "Core"
+                    module_type = parts[-1].capitalize() if len(parts) > 1 else "Core"
+                # Convert to display name
+                package_display = " ".join(
+                    word.capitalize() for word in package_name.split("_")
+                )
+                if package_display not in packages:
+                    packages[package_display] = []
+                # Add module link
+                packages[package_display].append(
+                    {"name": module_type, "link": f"xdks/python/reference/{name}"}
+                )
+            # Build accordion content
+            package_accordions = []
+            for package_name, modules in sorted(packages.items()):
+                if modules:
+                    module_items = "\n".join(
+                        [
+                            f'  - [{m["name"]}](/{m["link"]})'
+                            for m in sorted(modules, key=lambda x: x["name"])
+                        ]
+                    )
+                    package_accordions.append(
+                        f'  <Accordion title="{package_name}">\n{module_items}\n  </Accordion>'
+                    )
+            # Build final modules content
+            if package_accordions:
+                modules_content = f"""---
+title: "{modules_title}"
+sidebarTitle: "{modules_title}"
+---
+<AccordionGroup>
+<Accordion title="Packages">
+{chr(10).join(package_accordions)}
+</Accordion>
+</AccordionGroup>
+"""
+            else:
+                modules_content = f"""---
+title: "{modules_title}"
+sidebarTitle: "{modules_title}"
+---
+<AccordionGroup>
+<Accordion title="Packages">
+</Accordion>
+</AccordionGroup>
+"""
+            # Write modules.mdx
+            (output_dir / "xdks" / "python" / "reference" / "modules.mdx").write_text(
+                modules_content, encoding="utf-8"
+            )
+        # Get all reference files for navigation
+        ref_root = output_dir / "xdks" / "python" / "reference"
+        all_ref_files = [
+            f
+            for f in ref_root.glob("*.mdx")
+            if f.stem != "modules" and f.stem != "index"
+        ]
+        # Separate into clients, models, and other
+        client_files = [f for f in all_ref_files if f.stem.endswith(".client")]
+        model_files = [f for f in all_ref_files if f.stem.endswith(".models")]
+        other_files = [
+            f
+            for f in all_ref_files
+            if not f.stem.endswith(".client") and not f.stem.endswith(".models")
+        ]
+
+        # Group by package
+
+
+        def group_by_package(files):
+            buckets = {}
+            for f in files:
+                name = f.stem
+                if ".client" in name:
+                    package = name.replace("xdk.", "").replace(".client", "")
+                elif ".models" in name:
+                    package = name.replace("xdk.", "").replace(".models", "")
+                else:
+                    parts = name.replace("xdk.", "").split(".")
+                    package = parts[0] if parts else "Core"
+                # Convert to display name
+                package_display = " ".join(
+                    word.capitalize() for word in package.split("_")
+                )
+                if package_display not in buckets:
+                    buckets[package_display] = []
+                buckets[package_display].append(f"xdks/python/reference/{f.stem}")
+            # Sort pages within groups
+            for group in buckets:
+                buckets[group].sort()
+            return [{"group": k, "pages": v} for k, v in sorted(buckets.items())]
+
+        client_groups = group_by_package(client_files)
+        model_groups = group_by_package(model_files)
+        other_groups = group_by_package(other_files)
+        # Generate navigation JSON
+        # Build navigation structure with packages and modules in sidebar
+        api_ref_pages = ["xdks/python/reference/modules"]
+        # Add client groups
+        if client_groups:
+            api_ref_pages.append({"group": "Clients", "pages": client_groups})
+        # Add model groups
+        if model_groups:
+            api_ref_pages.append({"group": "Models", "pages": model_groups})
+        # Add other groups
+        if other_groups:
+            api_ref_pages.append({"group": "Core", "pages": other_groups})
+        python_sdk_navigation = {
+            "tab": "Python SDK",
+            "hidden": True,
+            "pages": [
+                "xdks/python/overview",
+                "xdks/python/install",
+                "xdks/python/quickstart",
+                "xdks/python/authentication",
+                "xdks/python/pagination",
+                "xdks/python/streaming",
+                {"group": "API Reference", "pages": api_ref_pages},
+            ],
+        }
+        # Write navigation JSON
+        nav_json_path = output_dir / "python-sdk-navigation.json"
+        nav_json_path.write_text(json.dumps(python_sdk_navigation, indent=2))
+        print("✅ Python SDK documentation processed successfully!")
+        print(f"📁 Output directory: {output_dir}/")
+        print(f"📊 Processed {len(processed_files)} files")
+        print("\n🚀 Integration steps:")
+        print("1. Copy the 'xdks/' folder to your existing Mintlify site")
+        print(
+            "2. Add the navigation structure from 'python-sdk-navigation.json' to your mintlify.json"
+        )
+        print("3. Push to your main branch to deploy")
+    except Exception as error:
+        print(f"❌ Error processing documentation: {error}")
+        import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

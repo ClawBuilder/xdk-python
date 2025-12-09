@@ -16,11 +16,20 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
-# Models for get_stream_links
+# Models for validate
 
 
-class GetStreamLinksResponse(BaseModel):
-    """Response model for get_stream_links"""
+class ValidateResponse(BaseModel):
+    """Response model for validate"""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+
+# Models for delete
+
+
+class DeleteResponse(BaseModel):
+    """Response model for delete"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -40,20 +49,11 @@ class CreateWebhookReplayJobResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
 
-# Models for validate
+# Models for get_stream_links
 
 
-class ValidateResponse(BaseModel):
-    """Response model for validate"""
-
-    model_config = ConfigDict(populate_by_name=True, extra="allow")
-
-
-# Models for delete
-
-
-class DeleteResponse(BaseModel):
-    """Response model for delete"""
+class GetStreamLinksResponse(BaseModel):
+    """Response model for get_stream_links"""
 
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 

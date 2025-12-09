@@ -15,43 +15,44 @@ import requests
 from typing import Dict, List, Optional, Union, Any, Callable
 
 from .oauth2_auth import OAuth2PKCEAuth
+from .oauth1_auth import OAuth1
 from .paginator import Cursor, cursor, PaginationError
 
-from .connections.client import ConnectionsClient
-
-from .posts.client import PostsClient
+from .compliance.client import ComplianceClient
 
 from .direct_messages.client import DirectMessagesClient
 
-from .news.client import NewsClient
+from .posts.client import PostsClient
 
-from .spaces.client import SpacesClient
+from .activity.client import ActivityClient
 
 from .usage.client import UsageClient
-
-from .general.client import GeneralClient
-
-from .community_notes.client import CommunityNotesClient
-
-from .compliance.client import ComplianceClient
 
 from .stream.client import StreamClient
 
 from .users.client import UsersClient
 
-from .account_activity.client import AccountActivityClient
+from .media.client import MediaClient
 
-from .activity.client import ActivityClient
+from .news.client import NewsClient
+
+from .connections.client import ConnectionsClient
+
+from .general.client import GeneralClient
 
 from .lists.client import ListsClient
 
 from .trends.client import TrendsClient
 
-from .webhooks.client import WebhooksClient
-
-from .media.client import MediaClient
+from .spaces.client import SpacesClient
 
 from .communities.client import CommunitiesClient
+
+from .account_activity.client import AccountActivityClient
+
+from .community_notes.client import CommunityNotesClient
+
+from .webhooks.client import WebhooksClient
 
 
 class Client:
@@ -69,6 +70,7 @@ class Client:
         token: Dict[str, Any] = None,
         scope: Union[str, List[str]] = None,
         authorization_base_url: str = "https://x.com/i",
+        auth: OAuth1 = None,
     ):
         """Initialize the X API client.
         Args:
@@ -81,9 +83,10 @@ class Client:
             token: An existing OAuth2 token dictionary (if available). If provided, access_token will be extracted.
             scope: Space-separated string or list of strings for OAuth2 authorization scopes.
             authorization_base_url: The base URL for OAuth2 authorization (defaults to https://x.com/i).
+            auth: OAuth1 instance for OAuth1.0a authentication.
         """
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "xdk-python/0.4.6"})
+        self.session.headers.update({"User-Agent": "xdk-python/0.5.0"})
         self.base_url = base_url
         self.bearer_token = bearer_token
         # Extract access_token from token dict if provided, otherwise use direct access_token parameter
@@ -112,25 +115,27 @@ class Client:
                 and "access_token" in self.oauth2_auth.token
             ):
                 self._access_token = self.oauth2_auth.token["access_token"]
+        # Set up OAuth1 authentication if provided
+        self.auth = auth
         # Initialize clients for each tag
-        self.connections = ConnectionsClient(self)
-        self.posts = PostsClient(self)
-        self.direct_messages = DirectMessagesClient(self)
-        self.news = NewsClient(self)
-        self.spaces = SpacesClient(self)
-        self.usage = UsageClient(self)
-        self.general = GeneralClient(self)
-        self.community_notes = CommunityNotesClient(self)
         self.compliance = ComplianceClient(self)
+        self.direct_messages = DirectMessagesClient(self)
+        self.posts = PostsClient(self)
+        self.activity = ActivityClient(self)
+        self.usage = UsageClient(self)
         self.stream = StreamClient(self)
         self.users = UsersClient(self)
-        self.account_activity = AccountActivityClient(self)
-        self.activity = ActivityClient(self)
+        self.media = MediaClient(self)
+        self.news = NewsClient(self)
+        self.connections = ConnectionsClient(self)
+        self.general = GeneralClient(self)
         self.lists = ListsClient(self)
         self.trends = TrendsClient(self)
-        self.webhooks = WebhooksClient(self)
-        self.media = MediaClient(self)
+        self.spaces = SpacesClient(self)
         self.communities = CommunitiesClient(self)
+        self.account_activity = AccountActivityClient(self)
+        self.community_notes = CommunityNotesClient(self)
+        self.webhooks = WebhooksClient(self)
 
     @property
 

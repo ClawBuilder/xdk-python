@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Any, Union, cast, TYPE_CHECKING, Iterator
 import requests
 import time
+import urllib.parse
 
 
 if TYPE_CHECKING:
@@ -47,8 +48,60 @@ class GeneralClient:
         headers = {}
         # Prepare request data
         json_data = None
+        # Select authentication method based on endpoint requirements and available credentials
+        # Priority strategy (matches TypeScript):
+        # 1. If endpoint only accepts one method, use that (if available)
+        # 2. If endpoint accepts multiple methods:
+        #    - For write operations (POST/PUT/DELETE/PATCH): Prefer OAuth1 > OAuth2 User Token > Bearer Token
+        #    - For read operations (GET): Prefer Bearer Token > OAuth2 User Token > OAuth1
+        # 3. If no security requirements: Bearer Token > OAuth2 User Token > OAuth1
+        selected_auth = None
+        # Check what auth methods we have available
+        available_bearer = bool(self.client.bearer_token)
+        available_oauth2 = bool(self.client.access_token)
+        available_oauth1 = bool(self.client.auth and self.client.auth.access_token)
+        # No security requirements - use default priority
+        if available_bearer:
+            selected_auth = "bearer_token"
+        elif available_oauth2:
+            selected_auth = "oauth2_user_context"
+        elif available_oauth1:
+            selected_auth = "oauth1"
+        # Apply selected authentication
+        if selected_auth == "oauth1":
+            # OAuth1 authentication - build proper OAuth1 header dynamically
+            # Build OAuth1 header with method, URL, and body
+            # For OAuth1, we need to include query params in the URL for signature
+            full_url = url
+            if params:
+                query_string = urllib.parse.urlencode(params)
+                full_url = f"{url}?{query_string}" if query_string else url
+            # Prepare body for OAuth1 signature (form-encoded, not JSON)
+            body_string = ""
+            # Build OAuth1 authorization header
+            oauth_header = self.client.auth.build_request_header(
+                method="get", url=full_url, body=body_string
+            )
+            headers["Authorization"] = oauth_header
+        elif selected_auth == "bearer_token":
+            # Bearer token authentication
+            if self.client.bearer_token:
+                headers["Authorization"] = f"Bearer {self.client.bearer_token}"
+            elif self.client.access_token:
+                headers["Authorization"] = f"Bearer {self.client.access_token}"
+        elif selected_auth == "oauth2_user_context":
+            # OAuth2 User Token authentication
+            if self.client.access_token:
+                headers["Authorization"] = f"Bearer {self.client.access_token}"
+                # Check if token needs refresh
+                if self.client.oauth2_auth and self.client.token:
+                    if self.client.is_token_expired():
+                        self.client.refresh_token()
+                        if self.client.access_token:
+                            headers["Authorization"] = (
+                                f"Bearer {self.client.access_token}"
+                            )
         # Make the request
-        # This should only happen for the /2/openapi.json route
         response = self.client.session.get(
             url,
             params=params,
